@@ -1,0 +1,345 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from plotnine import *
+import re
+import markdown
+from pathlib import Path
+from datetime import datetime
+import seaborn as sns
+import matplotlib.colors as mcolors
+
+
+# Function to calculate ratio
+def sw_ratio(df, cols):
+    df_long = pd.melt(df, value_vars=cols, var_name='group', value_name='score')
+    df_counts = df_long.groupby(['score', 'group']).size().reset_index(name='count')
+    # len_dict={
+    #     'random':df_long[df_long['group']=='random'].shape[0],
+    #     'sw':df_long[df_long['group']=='sw'].shape[0]
+    # }
+    # df_counts['count'] = df_counts.apply(lambda x: len_dict[x['group']]-x['count'], axis=1)
+    df_wide = df_counts.pivot(index='score', columns='group', values='count').fillna(0)
+
+    df_wide['ratio'] = df_wide[cols[1]] / df_wide[cols[0]]
+    return df_wide
+
+def plot_cumulative_line(data,output_name):
+    df_wide_sw = sw_ratio(data, ['random', 'sw'])
+    df_wide_sw.reset_index(inplace=True)
+    sw_sum = df_wide_sw['sw'][df_wide_sw['ratio'] > 5].sum()
+    sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > 5].min()
+
+    # Set ratios > 50 to infinity
+    # df_wide_sw.loc[df_wide_sw['ratio'] > 50, 'ratio'] = np.inf
+    # df_wide_sw['sw'] = df_wide_sw['sw'].sum() - df_wide_sw['sw']
+    # df_wide_sw['random'] = df_wide_sw['random'].sum() - df_wide_sw['random']
+    # df_wide_sw['cumulative_sw'] = df_wide_sw['sw'].cumsum()
+    # df_wide_sw['cumulative_random'] = df_wide_sw['random'].cumsum()
+    df_wide_sw['sw'] = df_wide_sw['sw'][::-1].cumsum()[::-1]
+    df_wide_sw['random'] = df_wide_sw['random'][::-1].cumsum()[::-1]
+    plot_df = pd.melt(df_wide_sw,id_vars=['score'],value_vars=['sw', 'random'])
+
+    # Create cumulative line plot
+    p_cumulative = (ggplot(plot_df, aes(x='score', y='value', color='group'))
+        + geom_line()
+        + geom_point(size=1)  # Optional: Add points at each step
+        + labs(title='Cumulative Counts', x='Score', y='Cumulative Count')
+        + theme_bw() \
+        + theme(plot_title=element_text(ha='center'),
+                legend_position='right',
+                )
+    )
+    # Save the plot
+    p_cumulative.save(output_name, width=5, height=3.5,format='png',dpi=300)
+
+    return  sw_min
+
+def plot_aligned_length(df,folder_name):
+    plot = ggplot(df, aes(x='query_length')) \
+           + theme_bw()\
+           + geom_histogram(binwidth=0.5)\
+           + theme(
+        figure_size=(8, 4),
+        axis_text=element_text(size=12,),
+        axis_title=element_text(size=12,),
+        panel_grid_minor=element_blank(),
+        title=element_text(size=12,),
+        strip_background=element_rect(alpha=0),
+        strip_text=element_text(size=12,),
+        legend_position='bottom',
+        legend_text=element_text(size=8,),
+    )
+    plot.save(folder_name+'query_length.png',dpi=300,format='png')
+    Q1 = np.percentile(df['aligned_length'], 25)
+    Q2 = np.percentile(df['aligned_length'], 50)
+    Q3 = np.percentile(df['aligned_length'], 75)
+    Q_list=[Q1, Q2, Q3]
+    Q_axis_list=[[0,0],
+                 [1000,1000],
+                 [2000,2000],
+                 [3000,3000],
+                 ['Q1',Q_list[0]],
+                 ['Q2',Q_list[1]],
+                 ['Q3',Q_list[2]]]
+    Q_axis_list = pd.DataFrame(Q_axis_list)
+    df = df[df['aligned_length']<3500]
+    Q_axis_list.sort_values(by=[1],inplace=True)
+    plot = ggplot(df, aes(x='aligned_length')) \
+           + theme_bw()\
+           + geom_density(fill='#D7D7D7') \
+           + scale_x_continuous(breaks=Q_axis_list[1].values.tolist(),labels=Q_axis_list[0].values.tolist())\
+           + theme(
+        figure_size=(8, 4),
+        axis_text=element_text(size=12,),
+        axis_title=element_text(size=12,),
+        panel_grid_minor=element_blank(),
+        title=element_text(size=12,),
+        strip_background=element_rect(alpha=0),
+        strip_text=element_text(size=12,),
+        legend_position='bottom',
+        legend_text=element_text(size=8,),
+    )
+    for item in Q_list:
+        plot = plot + geom_vline(xintercept=item,color='black',alpha=0.5,linetype='dashdot')
+    plot.save(folder_name+'aligned_length.png', dpi=300, format='png')
+
+    def extract_number(s,unique_number):
+        match = re.search(r'SL(\d+)', s)  # 使用正则表达式提取数字
+        if s=='SL2_unknown':
+            return unique_number - 1
+        elif s =='SL1_unknown':
+            return unique_number - 2
+        if match:
+            return int(match.group(1))  # 返回数字部分并转换为整数
+        return 0  # 如果没有匹配到，返回 0（可以根据需要调整）
+    # unknown will be merged together and SL1 separated
+    # df['SL_type'].apply(lambda x: if 'unkown'(x))
+    df = df[df['SL_type']!='random']
+    result_list=['SL1','SL2','SL3','SL4','SL5','SL6','SL7','SL8','SL9','SL10','SL11','SL12','SL13','SL1_unknown','SL2_unknown']
+    colors_13 = [
+        "#1F77B4",  # SL1 - 蓝色
+        "#FF7F0E",  # SL2 - 橙色
+        "#2CA02C",  # SL3 - 绿色
+        "#D62728",  # SL4 - 红色
+        "#9467BD",  # SL5 - 紫色
+        "#8C564B",  # SL6 - 棕色
+        "#E377C2",  # SL7 - 粉红
+        "#7F7F7F",  # SL8 - 灰色
+        "#BCBD22",  # SL9 - 橄榄黄
+        "#17BECF",  # SL10 - 青色
+        "#AEC7E8",  # SL11 - 浅蓝
+        "#FFBB78",  # SL12 - 浅橙
+        "#98DF8A"  # SL13 - 浅绿
+    ]
+
+    # 创建完整的颜色映射字典
+    color_mapping = {
+        f"SL{i + 1}": colors_13[i] for i in range(13)
+    }
+    color_mapping['SL1_unknown']='#D7D7D7'
+    color_mapping['SL2_unknown'] = 'darkgrey'
+    df['SL_type'] = df['SL_type'].apply(lambda x: 'SL2_unknown' if 'unknown' in x and x != 'SL1_unknown' else x)
+    data = df['SL_type'].value_counts().reset_index()
+    category = pd.api.types.CategoricalDtype(categories=result_list, ordered=True)
+    data['SL_type'] = data['SL_type'].astype(category)
+    data = data.sort_values('SL_type')
+    def autopct_func(pct, allvals):
+        absolute = round(pct / 100. * sum(allvals))
+        return f"{pct:.1f}%\n({absolute:d})"
+
+    labels = data['SL_type'].values
+    sizes = data['count'].values
+    # 生成15个清新风格的颜色
+    # 使用Seaborn的"husl"色系生成14个颜色，然后添加指定的灰色
+    base_colors = sns.color_palette("pastel", len(labels)-1)  # 生成14个清新颜色
+    # 将RGB颜色转换为HEX
+    base_hex_colors = [mcolors.to_hex(color) for color in base_colors]
+    # 添加最后一个指定的灰色
+
+    plt.figure(figsize=(5, 5))
+    plt.pie(sizes, labels=labels,
+            colors=[color_mapping[label] for label in labels],
+            pctdistance=0.65,  # 百分比标签距离中心的距离
+            autopct=lambda pct: autopct_func(pct, sizes),
+            startangle=90,
+            textprops={'fontsize': 8},  # 调整字体大小
+            labeldistance=1.1,  # 标签距离中心的距离
+            rotatelabels=True)  # 旋转标签以避免重叠
+    # 确保饼图为圆形
+    plt.axis('equal')
+    # 保存图形
+    plt.savefig(folder_name+'type_pie.png', dpi=300, bbox_inches='tight')
+
+
+def create_image_gallery_md_html(image_paths, output_md_path, output_html_path):
+    # Markdown模板
+    md_template = """
+# Data Visualization Results
+
+This document contains the visualization results from the analysis.
+
+## Visualization Gallery
+
+{image_sections}
+
+---
+
+*Generated on {current_date}*
+    """
+
+    # HTML样式模板
+    # 使用双大括号 {{}} 来转义CSS中的大括号
+    html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Visualization Results</title>
+    <style>
+        body {{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }}
+        h1 {{
+            color: #333;
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }}
+        h2 {{
+            color: #444;
+            margin-top: 30px;
+        }}
+        img {{
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }}
+        .footer {{
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }}
+    </style>
+</head>
+<body>
+    {html_content}
+</body>
+</html>
+"""
+
+    # 创建每个图片的Markdown片段
+    image_sections = ""
+    image_captions = [
+        "Cumulative Counts (SW)",
+        "Cumulative Counts (SL)",
+        "Query Length Distribution",
+        "Aligned Length Distribution",
+        "SL Type Distribution"
+    ]
+
+    for img_path, caption in zip(image_paths, image_captions):
+        image_sections += f"""
+### {caption}
+
+![{caption}]({img_path})
+
+---
+        """
+
+    # 获取当前日期
+    current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 生成完整的Markdown内容
+    md_content = md_template.format(
+        image_sections=image_sections,
+        current_date=current_date
+    )
+
+    # 写入Markdown文件
+    with open(output_md_path, 'w', encoding='utf-8') as f:
+        f.write(md_content)
+
+    # 将Markdown转换为HTML
+    html_content = markdown.markdown(
+        md_content,
+        extensions=['markdown.extensions.extra', 'markdown.extensions.toc']
+    )
+
+    # 将HTML内容嵌入到模板中
+    final_html = html_template.format(html_content=html_content)
+
+    # 写入HTML文件
+    with open(output_html_path, 'w', encoding='utf-8') as f:
+        f.write(final_html)
+
+# 主程序
+
+def visualize_html(output_file):
+    import os
+    from datetime import datetime
+
+    # 获取当前时间戳（格式：YYYYMMDD_HHMMSS）
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # 创建文件夹名称（SLRange_view_中间加时间戳）
+    folder_name = f"SLRange_{timestamp}_view/"
+    # 创建文件夹
+    os.makedirs(folder_name, exist_ok=True)
+
+    path = output_file
+    # Read data
+    df = pd.read_csv(path, sep='\t')
+    reads_all = len(df)
+    df = df.dropna()
+    reads_na = len(df)
+
+    print(reads_na / reads_all)
+
+    # Data processing
+    df['SL_score'] = df['SL_score'].astype(float)
+
+    # Calculate AUC
+    # SW processing
+    data = df.copy()
+    data['random'] = data['random_sw_score'].round(0)
+    data['sw'] = data['sw_score'].round(0)
+    plot_cumulative_line(data, folder_name+'cumulative_int.png')
+
+    # SL processing
+    data = df.copy()
+    data['random'] = (data['random_SL_score'] * 2).round() / 2
+    data['sw'] = (data['SL_score'] * 2).round() / 2
+    temp = plot_cumulative_line(data, folder_name+'cumulative_int_sl.png')
+
+    df = df[df['SL_score'] > temp]
+    # 图片文件路径（根据你的代码生成的图片名称）
+    df['query_length'] = df['query_length'].astype(int).astype(str)
+    plot_aligned_length(df,folder_name)
+
+    image_paths = [
+        "cumulative_int.png",
+        "cumulative_int_sl.png",
+        "query_length.png",
+        "aligned_length.png",
+        "type_pie.png"
+    ]
+
+    # 输出文件路径
+    output_md = folder_name+"visualization_results.md"
+    output_html = folder_name+"visualization_results.html"
+
+    # 创建Markdown和HTML文件
+    create_image_gallery_md_html(image_paths, output_md, output_html)
+    print(f"Markdown file has been created at: {output_md}")
+    print(f"HTML file has been created at: {output_html}")

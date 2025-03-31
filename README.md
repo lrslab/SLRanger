@@ -1,2 +1,2 @@
 # SLRanger
-Detection tool for operon and spliced leader designed for Direcr RNA sequencing 
+Detection tool for operon and spliced leader designed for direct RNA sequencing 
