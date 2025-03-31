@@ -438,7 +438,7 @@ def main(args):
         query name, 22nt sequence, SW score, SL1 score, SL2 score, SL1 cigar, SL2 cigar ,SL type
         query name, selected 22nt sequence with soft clipping...
     """
-    sl_dict = fasta_to_dict(args.refer)
+    sl_dict = fasta_to_dict(args.ref)
 
     # 生成10个长度为SL1长度的碱基的随机序列
     random_seq_len = len(sl_dict['SL1'])
@@ -459,7 +459,7 @@ def main(args):
         length_score = length_index(SL, SEQ, kmer, mismatch_to_kmer, k)
         length_scores[SL] = length_score
 
-    bam_file = pysam.AlignmentFile(args.input, 'rb')
+    bam_file = pysam.AlignmentFile(args.bam, 'rb')
     timestamp = int(time.time())
     tmp_output_name = f"tmp_{timestamp}.csv"
     outfile = open(tmp_output_name, "w")

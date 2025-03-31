@@ -441,9 +441,6 @@ def main(args):
     df_genes_with_cds = pd.merge(df_genes, df_genes_filter, on='gene', how='right')
     df_pos_dict = df_genes_with_cds.set_index('gene').to_dict('index')
     df_pos = sort_and_calc_distance(df_genes_with_cds)
-    # df_pos_path = '/t4/ywshao/cbr_cni_directrna/raw_data/Cel/ref/cel_gene_pos.csv'
-    # df_pos.to_csv(df_pos_path, sep='\t', index=False)
-    # df_pos = pd.read_csv(df_pos_path, sep='\t')
     args.mapping=run_track_cluster(args.refer,args.bam)
     map_gene = read_map_info(args.mapping)
     sl_ss = sl_process(args.input)

@@ -293,7 +293,7 @@ def visualize_html(output_file):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # 创建文件夹名称（SLRange_view_中间加时间戳）
-    folder_name = f"SLRange_{timestamp}_view/"
+    folder_name = f"SLRange_view_{timestamp}/"
     # 创建文件夹
     os.makedirs(folder_name, exist_ok=True)
 
