@@ -10,6 +10,28 @@ import multiprocessing
 from tqdm import tqdm
 import time
 from visualization import visualize_html
+
+def fasta_to_dict(fasta_path):
+    fasta_dict = {}
+    with open(fasta_path, 'r') as f:
+        current_key = None
+        sequence_parts = []
+        for line in f:
+            line = line.strip()
+            if line.startswith('>'):
+                if current_key:
+                    # 保存上一个序列
+                    fasta_dict[current_key] = ''.join(sequence_parts)
+                current_key = line[1:]  # 去掉 '>'
+                sequence_parts = []
+            else:
+                sequence_parts.append(line)
+        # 保存最后一个序列
+        if current_key:
+            fasta_dict[current_key] = ''.join(sequence_parts)
+    return fasta_dict
+
+
 def generate_mismatches(kmer, bases=['A', 'T', 'C', 'G']):
     mismatches = set()
     for i in range(len(kmer)):
@@ -416,8 +438,7 @@ def main(args):
         query name, 22nt sequence, SW score, SL1 score, SL2 score, SL1 cigar, SL2 cigar ,SL type
         query name, selected 22nt sequence with soft clipping...
     """
-    sl_list = pd.read_csv(args.refer)
-    sl_dict = sl_list.set_index('SL')['SEQ'].to_dict()
+    sl_dict = fasta_to_dict(args.refer)
 
     # 生成10个长度为SL1长度的碱基的随机序列
     random_seq_len = len(sl_dict['SL1'])
@@ -471,7 +492,6 @@ def main(args):
     df = pd.read_csv(tmp_output_name,sep='\t')
     df.sort_values(by=['query_name'], inplace=True)
     df.to_csv(args.output, index=False,sep='\t')
-    args.visualization=True
     if args.visualization:
         visualize_html(args.output)
     print('Finished')
@@ -479,15 +499,14 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="help to know spliced leader and distinguish SL1 and SL2")
-    parser.add_argument("-r", "--refer", type=str, default='SL_list_cel.csv',
+    parser.add_argument("-r", "--ref", type=str, required=True,
                         help="SL reference")
-    parser.add_argument("-i", "--input", type=str,default="test.bam",
+    parser.add_argument("-b", "--bam", type=str, required=True,
                         help="input the bam file")
-    parser.add_argument("-o", "--output", type=str, default="test.txt",
+    parser.add_argument("-o", "--output", type=str, default="SLRanger.txt",
                         help="output file")
     parser.add_argument( "--visualization", action='store_true', help='Turn on the visualization mode')
     parser.add_argument("-t", "--cpu", type=int,
-                        default=4,
-                        help="number if CPU")
+                        default=4, help="CPU number")
     args = parser.parse_args()
     main(args)

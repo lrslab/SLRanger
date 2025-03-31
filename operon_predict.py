@@ -466,15 +466,10 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="help to know spliced leader and distinguish SL1 and SL2")
-    parser.add_argument("-r", "--refer", type=str,
-                        default='cel_wormbase.gff', help="GFF annotation file")
-    parser.add_argument("-b", "--bam", type=str,default='test.bam',
-                         help="bam file")
-    parser.add_argument("-i", "--input", type=str,
-                        default="test.txt", help="input the SL detection file")
-    parser.add_argument("-o", "--output", type=str, metavar="",
-                        default="test.gff",help="output operon detection file")
-    parser.add_argument("-d", "--distance", type=int, metavar="",
-                        default=5000, help="promoter scope")
+    parser.add_argument("-g", "--gff", type=str, required=True, help="GFF annotation file")
+    parser.add_argument("-b", "--bam", type=str, required=True,help="bam file")
+    parser.add_argument("-i", "--input", type=str, required=True, help="input the SL detection file")
+    parser.add_argument("-o", "--output", type=str,  default="SLRanger.gff",help="output operon detection file")
+    parser.add_argument("-d", "--distance", type=int, default=5000, help="promoter scope")
     args = parser.parse_args()
     main(args)
