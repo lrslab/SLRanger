@@ -17,7 +17,7 @@ Detection tool for operon and spliced leader designed for direct RNA sequencing
 
     pip install SLRanger
 
-###  b. Conda method
+###  b. Docker method
 ##  Quick start
 
 

@@ -45,6 +45,7 @@ def plot_cumulative_line(data,output_name):
         + geom_line()
         + geom_point(size=1)  # Optional: Add points at each step
         + labs(title='Cumulative Counts', x='Score', y='Cumulative Count')
+        + geom_vline(xintercept=sw_min, linetype='dashed', color='black')
         + theme_bw() \
         + theme(plot_title=element_text(ha='center'),
                 legend_position='right',
@@ -71,38 +72,6 @@ def plot_aligned_length(df,folder_name):
         legend_text=element_text(size=8,),
     )
     plot.save(folder_name+'query_length.png',dpi=300,format='png')
-    Q1 = np.percentile(df['aligned_length'], 25)
-    Q2 = np.percentile(df['aligned_length'], 50)
-    Q3 = np.percentile(df['aligned_length'], 75)
-    Q_list=[Q1, Q2, Q3]
-    Q_axis_list=[[0,0],
-                 [1000,1000],
-                 [2000,2000],
-                 [3000,3000],
-                 ['Q1',Q_list[0]],
-                 ['Q2',Q_list[1]],
-                 ['Q3',Q_list[2]]]
-    Q_axis_list = pd.DataFrame(Q_axis_list)
-    df = df[df['aligned_length']<3500]
-    Q_axis_list.sort_values(by=[1],inplace=True)
-    plot = ggplot(df, aes(x='aligned_length')) \
-           + theme_bw()\
-           + geom_density(fill='#D7D7D7') \
-           + scale_x_continuous(breaks=Q_axis_list[1].values.tolist(),labels=Q_axis_list[0].values.tolist())\
-           + theme(
-        figure_size=(8, 4),
-        axis_text=element_text(size=12,),
-        axis_title=element_text(size=12,),
-        panel_grid_minor=element_blank(),
-        title=element_text(size=12,),
-        strip_background=element_rect(alpha=0),
-        strip_text=element_text(size=12,),
-        legend_position='bottom',
-        legend_text=element_text(size=8,),
-    )
-    for item in Q_list:
-        plot = plot + geom_vline(xintercept=item,color='black',alpha=0.5,linetype='dashdot')
-    plot.save(folder_name+'aligned_length.png', dpi=300, format='png')
 
     def extract_number(s,unique_number):
         match = re.search(r'SL(\d+)', s)  # 使用正则表达式提取数字
@@ -115,7 +84,7 @@ def plot_aligned_length(df,folder_name):
         return 0  # 如果没有匹配到，返回 0（可以根据需要调整）
     # unknown will be merged together and SL1 separated
     # df['SL_type'].apply(lambda x: if 'unkown'(x))
-    df = df[df['SL_type']!='random']
+
     result_list=['SL1','SL2','SL3','SL4','SL5','SL6','SL7','SL8','SL9','SL10','SL11','SL12','SL13','SL1_unknown','SL2_unknown']
     colors_13 = [
         "#1F77B4",  # SL1 - 蓝色
@@ -171,6 +140,40 @@ def plot_aligned_length(df,folder_name):
     # 保存图形
     plt.savefig(folder_name+'type_pie.png', dpi=300, bbox_inches='tight')
 
+    Q1 = np.percentile(df['aligned_length'], 25)
+    Q2 = np.percentile(df['aligned_length'], 50)
+    Q3 = np.percentile(df['aligned_length'], 75)
+    Q_list = [Q1, Q2, Q3]
+    Q_axis_list = [[0, 0],
+                   [1000, 1000],
+                   [2000, 2000],
+                   [3000, 3000],
+                   ['Q1', Q_list[0]],
+                   ['Q2', Q_list[1]],
+                   ['Q3', Q_list[2]]]
+    Q_axis_list = pd.DataFrame(Q_axis_list)
+    df = df[df['aligned_length'] < 3500]
+    Q_axis_list.sort_values(by=[1], inplace=True)
+    plot = ggplot(df, aes(x='aligned_length')) \
+           + theme_bw() \
+           + geom_density(fill='#D7D7D7') \
+           + scale_x_continuous(breaks=Q_axis_list[1].values.tolist(), labels=Q_axis_list[0].values.tolist()) \
+           + theme(
+        figure_size=(8, 4),
+        axis_text=element_text(size=12, ),
+        axis_title=element_text(size=12, ),
+        panel_grid_minor=element_blank(),
+        title=element_text(size=12, ),
+        strip_background=element_rect(alpha=0),
+        strip_text=element_text(size=12, ),
+        legend_position='bottom',
+        legend_text=element_text(size=8, ),
+    )
+    for item in Q_list:
+        plot = plot + geom_vline(xintercept=item, color='black', alpha=0.5, linetype='dashdot')
+    plot.save(folder_name + 'aligned_length.png', dpi=300, format='png')
+
+    return data
 
 def create_image_gallery_md_html(image_paths, output_md_path, output_html_path):
     # Markdown模板
@@ -303,8 +306,7 @@ def visualize_html(output_file):
     reads_all = len(df)
     df = df.dropna()
     reads_na = len(df)
-
-    print(reads_na / reads_all)
+    # print(reads_na / reads_all)
 
     # Data processing
     df['SL_score'] = df['SL_score'].astype(float)
@@ -314,18 +316,39 @@ def visualize_html(output_file):
     data = df.copy()
     data['random'] = data['random_sw_score'].round(0)
     data['sw'] = data['sw_score'].round(0)
-    plot_cumulative_line(data, folder_name+'cumulative_int.png')
+    sw_min = plot_cumulative_line(data, folder_name+'cumulative_int.png')
 
     # SL processing
     data = df.copy()
     data['random'] = (data['random_SL_score'] * 2).round() / 2
     data['sw'] = (data['SL_score'] * 2).round() / 2
-    temp = plot_cumulative_line(data, folder_name+'cumulative_int_sl.png')
+    sl_min = plot_cumulative_line(data, folder_name+'cumulative_int_sl.png')
 
-    df = df[df['SL_score'] > temp]
+    df = df[df['SL_type'] != 'random']
+    reads_sw_solid = len(df[df['sw_score'] >= sw_min])
+    potential_read = len(df)
+    df = df[df['SL_score'] > sl_min]
+    reads_sl_solid = len(df)
     # 图片文件路径（根据你的代码生成的图片名称）
     df['query_length'] = df['query_length'].astype(int).astype(str)
-    plot_aligned_length(df,folder_name)
+    type_table = plot_aligned_length(df,folder_name)
+
+    output_table = pd.DataFrame({
+        'SL_type': ['Total', 'Candidate', 'Potential SL', 'SW Solid SL', 'SLRanger Solid SL'],
+        'count': [reads_all, reads_na, potential_read, reads_sw_solid, reads_sl_solid]
+    })
+
+    output_table = pd.concat([output_table, type_table])
+    output_table.columns = ['Variable', 'Read Count']
+    output_table['Proportion to total reads (%)'] = output_table['Read Count'] / reads_all
+    output_table['Proportion to Candidate reads (%)'] = output_table['Read Count'] / reads_na
+    output_table['Proportion to Potential reads (%)'] = output_table['Read Count'] / potential_read
+    output_table['Proportion to SLRanger Solid SL reads (%)'] = output_table['Read Count'] / reads_sl_solid
+
+    proportion_cols = [col for col in output_table.columns if 'Proportion' in col]
+    for col in proportion_cols:
+        output_table[col] = (output_table[col] * 100).round(2)
+        output_table.loc[output_table[col] >= 100, col] = '/'
 
     image_paths = [
         "cumulative_int.png",
@@ -338,8 +361,9 @@ def visualize_html(output_file):
     # 输出文件路径
     output_md = folder_name+"visualization_results.md"
     output_html = folder_name+"visualization_results.html"
-
+    output_table_path = folder_name+"summary_table.csv"
     # 创建Markdown和HTML文件
     create_image_gallery_md_html(image_paths, output_md, output_html)
+    output_table.to_csv(output_table_path, index=False)
     print(f"Markdown file has been created at: {output_md}")
     print(f"HTML file has been created at: {output_html}")
