@@ -103,7 +103,7 @@ def plot_aligned_length(df,folder_name):
         "#9467BD",  # SL5 - 紫色
         "#8C564B",  # SL6 - 棕色
         "#E377C2",  # SL7 - 粉红
-        "#00008B",  # SL8 - 灰色
+        "#00008B",  # SL8 - 深紫
         "#BCBD22",  # SL9 - 橄榄黄
         "#17BECF",  # SL10 - 青色
         "#AEC7E8",  # SL11 - 浅蓝
@@ -115,7 +115,7 @@ def plot_aligned_length(df,folder_name):
     color_mapping = {
         f"SL{i + 1}": colors_13[i] for i in range(13)
     }
-    color_mapping['SL1_unknown']='#231815'
+    color_mapping['SL1_unknown']='#231815' # black
     color_mapping['SL2_unknown'] = 'darkgrey'
     df['SL_type'] = df['SL_type'].apply(lambda x: 'SL2_unknown' if 'unknown' in x and x != 'SL1_unknown' else x)
     data = df['SL_type'].value_counts().reset_index()
