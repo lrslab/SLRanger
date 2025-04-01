@@ -340,7 +340,7 @@ def visualize_html(output_file):
     df = df[df['SL_score'] > sl_min]
     reads_sl_solid = len(df)
     # 图片文件路径（根据你的代码生成的图片名称）
-    # df['query_length'] = df['query_length'].astype(int)
+    df['query_length'] = df['query_length'].astype(int).astype(str).astype(int)
     type_table = plot_aligned_length(df,folder_name)
 
     output_table = pd.DataFrame({
