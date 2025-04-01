@@ -3,7 +3,9 @@ Detection tool for operon and spliced leader designed for direct RNA sequencing
 
 ## Workflow
 
-<center>![workflow](document/workflow.png) </center>
+<div align="center">
+  <img src="document/workflow.png" width="700" alt="Workflow">
+</div>
 
 ## Installation
 ###  a. Conda method
@@ -20,12 +22,12 @@ Detection tool for operon and spliced leader designed for direct RNA sequencing
 ```
  pip install SLRanger
  # or
- git clone 
+ git clone https://github.com/lrslab/SLRanger.git
 ```
 
 ###  b. Docker method
 ```
-docker pull zhihaguo/nanocem_env
+docker pull zhihaguo/slranger_env
 ```
 ##  Quick start
 
