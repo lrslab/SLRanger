@@ -66,21 +66,6 @@ def plot_cumulative_line(data,output_name):
     return  sw_min
 
 def plot_aligned_length(df,folder_name):
-    plot = ggplot(df, aes(x='query_length')) \
-           + theme_bw()\
-           + geom_histogram(binwidth=0.5)\
-           + theme(
-        figure_size=(8, 4),
-        axis_text=element_text(size=12,),
-        axis_title=element_text(size=12,),
-        panel_grid_minor=element_blank(),
-        title=element_text(size=12,),
-        strip_background=element_rect(alpha=0),
-        strip_text=element_text(size=12,),
-        legend_position='bottom',
-        legend_text=element_text(size=8,),
-    )
-    plot.save(folder_name+'query_length.png',dpi=300,format='png')
 
     def extract_number(s,unique_number):
         match = re.search(r'SL(\d+)', s)  # 使用正则表达式提取数字
@@ -148,6 +133,22 @@ def plot_aligned_length(df,folder_name):
     plt.axis('equal')
     # 保存图形
     plt.savefig(folder_name+'type_pie.png', dpi=300, bbox_inches='tight')
+
+    plot = ggplot(df, aes(x='query_length')) \
+           + theme_bw()\
+           + geom_histogram(binwidth=0.5) \
+           + theme(
+        figure_size=(8, 4),
+        axis_text=element_text(size=12,),
+        axis_title=element_text(size=12,),
+        panel_grid_minor=element_blank(),
+        title=element_text(size=12,),
+        strip_background=element_rect(alpha=0),
+        strip_text=element_text(size=12,),
+        legend_position='bottom',
+        legend_text=element_text(size=8,),
+    )
+    plot.save(folder_name+'query_length.png',dpi=300,format='png')
 
     Q1 = np.percentile(df['aligned_length'], 25)
     Q2 = np.percentile(df['aligned_length'], 50)
@@ -339,7 +340,7 @@ def visualize_html(output_file):
     df = df[df['SL_score'] > sl_min]
     reads_sl_solid = len(df)
     # 图片文件路径（根据你的代码生成的图片名称）
-    df['query_length'] = df['query_length'].astype(int).astype(str)
+    # df['query_length'] = df['query_length'].astype(int)
     type_table = plot_aligned_length(df,folder_name)
 
     output_table = pd.DataFrame({
