@@ -41,15 +41,24 @@ def plot_cumulative_line(data,output_name):
     plot_df = pd.melt(df_wide_sw,id_vars=['score'],value_vars=['SL_seq', 'random'])
 
     # Create cumulative line plot
-    p_cumulative = (ggplot(plot_df, aes(x='score', y='value', color='group'))
-        + geom_line()
-        + geom_point(size=1)  # Optional: Add points at each step
-        + labs(title='Cumulative Counts', x='Score', y='Cumulative Count')
-        + geom_vline(xintercept=sw_min, linetype='dashed', color='black')
-        + theme_bw() \
-        + theme(plot_title=element_text(ha='center'),
-                legend_position='right',
-                )
+    tick_step = 5
+    x_max = int(np.floor(plot_df['score'].max()))
+    # 生成整数刻度（不超过 x_max）
+    base_breaks = list(range(0, x_max + 1, tick_step))
+    x_breaks = sorted(set(base_breaks + [sw_min]))
+    p_cumulative = (
+            ggplot(plot_df, aes(x='score', y='value', color='group'))
+            + geom_line()
+            + geom_point(size=1)
+            + geom_vline(xintercept=sw_min, linetype='dashed', color='black')
+            + scale_x_continuous(breaks=x_breaks)
+            + labs(title='Cumulative Counts', x='Score', y='Cumulative Count')
+            + theme_bw()
+            + theme(
+        plot_title=element_text(ha='center'),
+        legend_position='right',
+        axis_text_y=element_text(margin={'r': 10}),
+    )
     )
     # Save the plot
     p_cumulative.save(output_name, width=5, height=3.5,format='png',dpi=300)
