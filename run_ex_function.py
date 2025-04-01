@@ -37,17 +37,18 @@ def run_track_cluster(gff_file,bam_file):
     folder_name = f"SLRange_temp_{timestamp}/"
     # 创建文件夹
     os.makedirs(folder_name, exist_ok=True)
-
-    gff2bigg_cmd = 'gff2bigg.py -i '+gff_file+' -o '+folder_name+'ref.bed'
-    run_cmd(gff2bigg_cmd)
-    bam2bigg_cmd = 'bam2bigg.py -b '+bam_file+' -o '+folder_name+'read.bed'
-    run_cmd(bam2bigg_cmd)
-    bedtools_cmd = 'bedtools sort -i '+folder_name+'read.bed'+' >'+folder_name+'read_sort.bed'
-    run_cmd(bedtools_cmd)
-    track_cmd="trackrun.py addgene -r "+folder_name+'ref.bed'+" -s "+folder_name+"read_sort.bed"
-    run_cmd(track_cmd)
     try:
-        shutil.rmtree(folder_name)
+        gff2bigg_cmd = 'gff2bigg.py -i '+gff_file+' -o '+folder_name+'ref.bed'
+        run_cmd(gff2bigg_cmd)
+        bam2bigg_cmd = 'bam2bigg.py -b '+bam_file+' -o '+folder_name+'read.bed'
+        run_cmd(bam2bigg_cmd)
+        bedtools_cmd = 'bedtools sort -i '+folder_name+'read.bed'+' >'+folder_name+'read_sort.bed'
+        run_cmd(bedtools_cmd)
+        track_cmd="trackrun.py addgene -r "+folder_name+'ref.bed'+" -s "+folder_name+"read_sort.bed"
+        run_cmd(track_cmd)
     except Exception as e:
         print(e)
+        shutil.rmtree(folder_name)
+        raise RuntimeError('There are some errors in the cmd as below, please check your env ')
+    shutil.rmtree(folder_name)
     return "read_sort_gene.bed"
