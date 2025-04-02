@@ -7,6 +7,10 @@ An integrated approach for spliced leader detection and operon prediction in euk
   <img src="document/workflow.png" width="700" alt="Workflow">
 </div>
 
+ **(A)** A flow chart illustrates the direct RNA sequencing procedure of the species with the spliced leader and trans-splicing mechanism. SL RNA joins to pre-mRNA through trans-splicing, adding an SL sequence to the 5′ end. This forms a mature mRNA with the SL sequence, which is then sequenced using Nanopore sequencing. Long RNA reads were mapped to genome reference. 
+ **(B)** A flow chart illustrates the workflow of the function of SL detection using SLRanger. After long RNA reads are mapped to reference, the 5’ unaligned end sequences will be extracted for alignment to SL sequence references and random sequences (as control). Based on the scoring system produced by SLRanger, we obtained the “SL score” on the possibility that one read has an SL sequence and the distribution of different SL types. 
+ **(C)** The plot of the principle on how SLRanger predicts operon with. Based on the information of whether each read has a high-confident SL sequence, we predict the operon structure through the mapping information of each read and the relative position of the gene. A high proportion of reads of the SL1 type will be regarded as operon upstream genes, while a high proportion of SL2 type reads or multiple reads supported by SL2 types will be regarded as operon downstream genes.
+
 ## Installation
  The pipeline is invoked using a CLI written in Python(3.9-3.11) and requires a Unix-based operating system.
 ###  a. Conda method
