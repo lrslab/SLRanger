@@ -14,25 +14,27 @@ An integrated approach for spliced leader detection and operon prediction in euk
  **(C)** The plot of the principle on how SLRanger predicts operon. Based on the information of whether each read has a high-confident SL sequence, we predict the operon structure through the mapping information of each read and the relative position of the gene. A high proportion of reads of the SL1 type will be regarded as operon upstream genes, while a high proportion of SL2 type reads or multiple reads supported by SL2 types will be regarded as operon downstream genes.
 
 ## Installation
- The pipeline is invoked using a CLI written in Python(3.9-3.11) and requires a Unix-based operating system.
-###  a. Conda method
+ The pipeline is invoked using a CLI written in **Python(3.9-3.11)** and requires a Unix-based operating system. For conda method, we provided installation from pypi and git
+###  i. Conda method
 1. Prepare a new conda env
 ```
  conda create -n SLRanger_env python=3.9
  conda activate SLRanger_env
  conda install -c bioconda bedtools minimap2 samtools
- git clone https://github.com/lrslab/SLRanger.git
- cd SLRanger/
- pip install -r requirments.txt
 ```
-2. Install from **Pypi** or clone from **github**
+2a. Install from **Pypi**  
 ```
- pip install SLRanger
- # or
- git clone https://github.com/lrslab/SLRanger.git
+# install from pypi
+pip install SLRanger
 ```
-
-###  b. Docker method
+2b. Install from **github**
+```
+#  install from git
+git clone https://github.com/lrslab/SLRanger.git
+cd SLRanger/
+pip install -r requirments.txt
+```
+###  ii. Docker method
 ```
 docker pull zhihaguo/slranger_env
 ```
