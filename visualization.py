@@ -2,12 +2,18 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from plotnine import *
+from plotnine.ggplot import PlotnineWarning
 import re
 import markdown
 from pathlib import Path
 from datetime import datetime
 import seaborn as sns
 import matplotlib.colors as mcolors
+import warnings
+# 隐藏特定的警告
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', category=DeprecationWarning)  # 如果使用plotnine可能需要
+warnings.filterwarnings('ignore', category=PlotnineWarning)
 
 
 # Function to calculate ratio
@@ -185,12 +191,16 @@ def plot_aligned_length(df,folder_name):
 
     return data
 
-def create_image_gallery_md_html(image_paths, output_md_path, output_html_path):
-    # Markdown模板
+def create_image_gallery_md_html(df, image_paths, output_md_path, output_html_path):
+    # Markdown模板 - 添加表格部分
     md_template = """
 # Data Visualization Results
 
-This document contains the visualization results from the analysis.
+This document contains the visualization results from the SLRanger.
+
+## Data Summary Table
+
+{data_table}
 
 ## Visualization Gallery
 
@@ -198,11 +208,10 @@ This document contains the visualization results from the analysis.
 
 ---
 
-*Generated on {current_date}*
+*Generated on {current_date}. If you think this tool is pretty GOOD, don’t forget to give our [Git](https://github.com/lrslab/SLRanger) a star! *
     """
 
-    # HTML样式模板
-    # 使用双大括号 {{}} 来转义CSS中的大括号
+    # HTML样式模板 - 添加表格样式
     html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -235,6 +244,23 @@ This document contains the visualization results from the analysis.
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border-radius: 4px;
         }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }}
+        th, td {{
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }}
+        th {{
+            background-color: #f5f5f5;
+            color: #333;
+        }}
+        tr:nth-child(even) {{
+            background-color: #fafafa;
+        }}
         .footer {{
             text-align: center;
             color: #666;
@@ -251,11 +277,14 @@ This document contains the visualization results from the analysis.
 </html>
 """
 
+    # 将DataFrame转换为Markdown表格
+    data_table = df.to_markdown(index=False)
+
     # 创建每个图片的Markdown片段
     image_sections = ""
     image_captions = [
-        "Cumulative Counts (SW)",
-        "Cumulative Counts (SL)",
+        "Cumulative Counts (SW). The **dashed black line** represents the recommended **cutoff** value.",
+        "Cumulative Counts (SL). The **dashed black line** represents the recommended **cutoff** value.",
         "Query Length Distribution",
         "Aligned Length Distribution",
         "SL Type Distribution"
@@ -275,6 +304,7 @@ This document contains the visualization results from the analysis.
 
     # 生成完整的Markdown内容
     md_content = md_template.format(
+        data_table=data_table,
         image_sections=image_sections,
         current_date=current_date
     )
@@ -286,7 +316,7 @@ This document contains the visualization results from the analysis.
     # 将Markdown转换为HTML
     html_content = markdown.markdown(
         md_content,
-        extensions=['markdown.extensions.extra', 'markdown.extensions.toc']
+        extensions=['markdown.extensions.extra', 'markdown.extensions.toc', 'markdown.extensions.tables']
     )
 
     # 将HTML内容嵌入到模板中
@@ -305,12 +335,14 @@ def visualize_html(output_file):
     # 获取当前时间戳（格式：YYYYMMDD_HHMMSS）
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # 创建文件夹名称（SLRange_view_中间加时间戳）
-    folder_name = f"SLRange_view_{timestamp}/"
-    # 创建文件夹
-    os.makedirs(folder_name, exist_ok=True)
 
     path = output_file
+    out_put_name = path.split('.')[0]
+
+    # 创建文件夹名称（SLRange_view_中间加时间戳）
+    folder_name = f"{out_put_name}_{timestamp}/"
+    # 创建文件夹
+    os.makedirs(folder_name, exist_ok=True)
     # Read data
     df = pd.read_csv(path, sep='\t')
     reads_all = len(df)
@@ -373,7 +405,8 @@ def visualize_html(output_file):
     output_html = folder_name+"visualization_results.html"
     output_table_path = folder_name+"summary_table.csv"
     # 创建Markdown和HTML文件
-    create_image_gallery_md_html(image_paths, output_md, output_html)
+
     output_table.to_csv(output_table_path, index=False)
+    create_image_gallery_md_html(output_table,image_paths, output_md, output_html)
     print(f"Markdown file has been created at: {output_md}")
     print(f"HTML file has been created at: {output_html}")
