@@ -75,7 +75,6 @@ options:
 ```
 #### Output description
 ##### i. result table
-
 ##### ii. visualization result
 The summary table and figures, including the Data Summary Table and the pictures including Cumulative Counts (SW), Cumulative Counts (SL), Query Length Distribution, Aligned Length Distribution, SL Type Distribution.
 will be output in a webpage format. An example is provided [here](sample/SLRange_view/visualization_results.md).
