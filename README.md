@@ -22,12 +22,12 @@ conda create -n SLRanger_env python=3.9
 conda activate SLRanger_env
 conda install -c bioconda bedtools minimap2 samtools
 ```
-2a. Install from **Pypi**  
+2a. Install from **PyPI**  
 ```
 # install from pypi
 pip install SLRanger
 ```
-2b. Install from **github**
+2b. Install from **Github**
 ```
 #  install from git
 git clone https://github.com/lrslab/SLRanger.git
