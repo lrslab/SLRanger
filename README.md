@@ -1,4 +1,4 @@
-# SLRanger
+![image](https://github.com/user-attachments/assets/00d1b9a0-c118-4869-baa6-a0ad76637dcc)# SLRanger
 <a href="https://pypi.python.org/pypi/SLRanger" rel="pypi">![PyPI](https://img.shields.io/pypi/v/SLRanger?color=green) </a>
 
 An integrated approach for spliced leader detection and operon prediction in eukaryotes using long RNA reads 
@@ -78,20 +78,20 @@ options:
 ##### i. result table
 | **col name**       | **description** |
 |--------------------|-----------------|
-| query_name         |                 |
-| strand             |                 |
-| soft_length        |                 |
-| aligned_length     |                 |
-| read_end           |                 |
-| query_length       |                 |
-| consensus          |                 |
-| random_sw_score    |                 |
-| random_final_score |                 |
-| random_SL_score    |                 |
-| sw_score           |                 |
-| final_score        |                 |
-| SL_score           |                 |
-| SL_type            |                 |
+| query_name         |Unique name of reads|
+| strand             |Mapping direction of reads|
+| soft_length        |Length of soft clipping at 5' end of reads (length of 5' unmapped region)|
+| aligned_length     |Aligned length of reads|
+| read_end           |End position of locally sequence mapped to SL sequence|
+| query_length       |Length of locally sequence mapped to SL sequence|
+| consensus          |Consensus sequence between the locally sequence mapped to SL sequence and SL sequence reference|
+| random_sw_score    |Optimal score of 5' unmapped region mapped to random sequences obtain by Smith-Waterman algorithm (SW score)|
+| random_final_score |Final score of 5' unmapped region mapped to random sequences obtained by SLRanger scoring system|
+| random_SL_score    |Random final score normlized by the maximum possible score for the length of the locally mapped region sequence (SL_score)|
+| sw_score           |Optimal score of 5' unmapped region mapped to SL reference sequences obtain by Smith-Waterman algorithm (SW score)|
+| final_score        |Final score of 5' unmapped region mapped to SL reference sequences obtained by SLRanger scoring system|
+| SL_score           |Final score normlized by the maximum possible score for the length of the locally mapped region sequence (SL_score)|
+| SL_type            |Spliced Leader types; random if random_SL_score > SL_score|
 
 ##### ii. visualization result
 The summary table and figures, including the Data Summary Table and the pictures including Cumulative Counts (SW), Cumulative Counts (SL), Query Length Distribution, Aligned Length Distribution, SL Type Distribution.
