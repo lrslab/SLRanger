@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 import re
 import argparse
 import pandas as pd
-from run_ex_function import run_track_cluster
+from SLRanger.run_ex_function import run_track_cluster
 
 # 解析GFF文件并构建DataFrame
 def parse_gff(gff_file):

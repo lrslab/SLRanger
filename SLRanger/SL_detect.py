@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import re
 import argparse
 import pysam
@@ -9,7 +10,7 @@ import random
 import multiprocessing
 from tqdm import tqdm
 import time
-from visualization import visualize_html
+from SLRanger.visualization import visualize_html
 
 def fasta_to_dict(fasta_path):
     fasta_dict = {}

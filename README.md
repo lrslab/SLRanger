@@ -18,9 +18,9 @@ An integrated approach for spliced leader detection and operon prediction in euk
 ###  i. Conda method
 1. Prepare a new conda env
 ```
- conda create -n SLRanger_env python=3.9
- conda activate SLRanger_env
- conda install -c bioconda bedtools minimap2 samtools
+conda create -n SLRanger_env python=3.9
+conda activate SLRanger_env
+conda install -c bioconda bedtools minimap2 samtools
 ```
 2a. Install from **Pypi**  
 ```
@@ -57,9 +57,9 @@ samtools index test.bam
 ### 2. Spliced Leader detection
 `SL_detect.py` is designed to detect spliced leaders. 
 #### Command options
-Available options can be viewed by running `python SL_detect.py -h` in the command line.
+Available options can be viewed by running `SL_detect.py -h` in the command line.
 ```
-python ../SL_detect.py -h
+SL_detect.py -h
 usage: SL_detect.py [-h] -r REF -b BAM [-o OUTPUT] [--visualization] [-t CPU]
 
 help to know spliced leader and distinguish SL1 and SL2
@@ -86,14 +86,14 @@ We provided test data to run as below.
 git clone https://github.com/lrslab/SLRanger.git
 cd sample/
 unzip data.zip
-python SL_detect.py --ref SL_list_cel.fa --bam test.bam -o SLRanger.txt -t 4 --visualization
+SL_detect.py --ref SL_list_cel.fa --bam test.bam -o SLRanger.txt -t 4 --visualization
 ```
 ### 3. Operon prediction
 `operon_predict.py` is designed to predict operons.
 #### Command options
-Available options can be viewed by running `python operon_predict.py -h` in the command line.
+Available options can be viewed by running `operon_predict.py -h` in the command line.
 ```
-python ../operon_predict.py  -h
+operon_predict.py  -h
 usage: operon_predict.py [-h] -g GFF -b BAM -i INPUT [-o OUTPUT] [-d DISTANCE]
 help to know spliced leader and distinguish SL1 and SL2
 
@@ -115,5 +115,5 @@ A GFF file will be returned.
 We provided test data to run as below (should be run after `SL_detect.py`).
 ```
 cd sample/
-python operon_predict.py -g cel_wormbase.gff -b test.bam -i SLRanger.txt  -o test.gff
+operon_predict.py -g cel_wormbase.gff -b test.bam -i SLRanger.txt  -o test.gff
 ```
