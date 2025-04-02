@@ -75,7 +75,19 @@ options:
 ```
 #### Output description
 ##### i. result table
-
+query_name      
+strand  
+soft_length     
+aligned_length  
+read_end        
+query_length    
+consensus       
+random_sw_score 
+random_final_score      
+random_SL_score sw_score        
+final_score     
+SL_score        
+SL_type
 ##### ii. visualization result
 The summary table and figures, including the Data Summary Table and the pictures including Cumulative Counts (SW), Cumulative Counts (SL), Query Length Distribution, Aligned Length Distribution, SL Type Distribution.
 will be output in a webpage format. An example is provided [here](sample/SLRange_view/visualization_results.md).
