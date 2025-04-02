@@ -1,4 +1,6 @@
 # SLRanger
+<a href="https://pypi.python.org/pypi/SLRanger" rel="pypi">![PyPI](https://img.shields.io/pypi/v/SLRanger?color=green) </a>
+
 An integrated approach for spliced leader detection and operon prediction in eukaryotes using long RNA reads 
 
 ## Workflow
