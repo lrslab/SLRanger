@@ -6,7 +6,7 @@ An integrated approach for spliced leader detection and operon prediction in euk
 ## Workflow
 
 <div align="center">
-  <img src="document/Figure1.png" width="700" alt="Workflow">
+  <img src="document/workflow.png" width="700" alt="Workflow">
 </div>
 
  **(A)** A flow chart illustrates the direct RNA sequencing procedure of the species with the spliced leader and trans-splicing mechanism. SL RNA joins to pre-mRNA through trans-splicing, adding an SL sequence to the 5′ end. This forms a mature mRNA with the SL sequence, which is then sequenced using Nanopore sequencing. Long RNA reads were mapped to genome reference. 
