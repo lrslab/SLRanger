@@ -435,13 +435,13 @@ def count_process(df, genes_dict):
 
 def main(args):
     print("Detection start ...")
-    gff_file = args.refer
+    gff_file = args.gff
     df_genes = parse_gff(gff_file)
     df_genes_filter = parse_cds_gene(gff_file)
     df_genes_with_cds = pd.merge(df_genes, df_genes_filter, on='gene', how='right')
     df_pos_dict = df_genes_with_cds.set_index('gene').to_dict('index')
     df_pos = sort_and_calc_distance(df_genes_with_cds)
-    args.mapping=run_track_cluster(args.refer,args.bam)
+    args.mapping=run_track_cluster(args.gff,args.bam)
     map_gene = read_map_info(args.mapping)
     sl_ss = sl_process(args.input)
     sl_ss_gene = pd.merge(sl_ss, map_gene, how='left', on='query_name')
