@@ -33,7 +33,7 @@ pip install SLRanger
 #  install from git
 git clone https://github.com/lrslab/SLRanger.git
 cd SLRanger/
-pip install -r requirments.txt
+python setup.py install
 ```
 ###  ii. Docker method
 ```
