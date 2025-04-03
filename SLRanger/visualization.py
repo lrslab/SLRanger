@@ -30,11 +30,11 @@ def sw_ratio(df, cols):
     df_wide['ratio'] = df_wide[cols[1]] / df_wide[cols[0]]
     return df_wide
 
-def plot_cumulative_line(data,output_name):
+def plot_cumulative_line(data, output_name, cf):
     df_wide_sw = sw_ratio(data, ['random', 'SL_seq'])
     df_wide_sw.reset_index(inplace=True)
-    sw_sum = df_wide_sw['SL_seq'][df_wide_sw['ratio'] > 5].sum()
-    sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > 5].min()
+    # sw_sum = df_wide_sw['SL_seq'][df_wide_sw['ratio'] > 5].sum()
+    sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > cf].min()
 
     # Set ratios > 50 to infinity
     # df_wide_sw.loc[df_wide_sw['ratio'] > 50, 'ratio'] = np.inf
@@ -328,7 +328,7 @@ This document contains the visualization results from the SLRanger.
 
 # 主程序
 
-def visualize_html(output_file):
+def visualize_html(output_file, cf):
     import os
     from datetime import datetime
 
@@ -358,13 +358,13 @@ def visualize_html(output_file):
     data = df.copy()
     data['random'] = data['random_sw_score'].round(0)
     data['SL_seq'] = data['sw_score'].round(0)
-    sw_min = plot_cumulative_line(data, folder_name+'cumulative_int.png')
+    sw_min = plot_cumulative_line(data, folder_name+'cumulative_int_sw.png', cf)
 
     # SL processing
     data = df.copy()
     data['random'] = (data['random_SL_score'] * 2).round() / 2
     data['SL_seq'] = (data['SL_score'] * 2).round() / 2
-    sl_min = plot_cumulative_line(data, folder_name+'cumulative_int_sl.png')
+    sl_min = plot_cumulative_line(data, folder_name+'cumulative_int_sl.png', cf)
 
     df = df[df['SL_type'] != 'random']
     reads_sw_solid = len(df[df['sw_score'] >= sw_min])

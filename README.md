@@ -73,6 +73,8 @@ options:
                         output file (default: SLRanger.txt)
   --visualization       Turn on the visualization mode
   -t CPU, --cpu CPU     CPU number (default: 4)
+  -c CUTOFF, --cutoff CUTOFF
+                        The value used to filter high confident SL reads. The higher the value, the stricter it is. The range is between 0-10. (default: 5)                      
 ```
 #### Output description
 
@@ -125,6 +127,8 @@ options:
                         output operon detection file ( default: SLRanger.gff)
   -d DISTANCE, --distance DISTANCE
                         promoter scope (default: 5000)
+  -c CUTOFF, --cutoff CUTOFF
+                        The value used to filter high confident SL reads. The higher the value, the stricter it is. The range is between 0-10. (default: 5)                      
 ```
 #### Output description
 A GFF file will be returned.

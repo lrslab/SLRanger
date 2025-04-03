@@ -494,7 +494,7 @@ def main(args):
     df.sort_values(by=['query_name'], inplace=True)
     df.to_csv(args.output, index=False,sep='\t')
     if args.visualization:
-        visualize_html(args.output)
+        visualize_html(args.output, args.cutoff)
     print('Finished')
 
 if __name__ == '__main__':
@@ -509,5 +509,6 @@ if __name__ == '__main__':
     parser.add_argument( "--visualization", action='store_true', help='Turn on the visualization mode')
     parser.add_argument("-t", "--cpu", type=int,
                         default=4, help="CPU number")
+    parser.add_argument("-c", "--cutoff", type=float, default=5, help="cutoff of high confident SL sequence")
     args = parser.parse_args()
     main(args)

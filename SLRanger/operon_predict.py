@@ -124,20 +124,20 @@ def sw_ratio(df, cols):
     df_wide['ratio'] = df_wide[cols[1]] / df_wide[cols[0]]
     return df_wide
 
-def cutoff(data):
+def cutoff(data, cf):
     df_wide_sw = sw_ratio(data, ['random', 'sw'])
     df_wide_sw.reset_index(inplace=True)
-    # sw_sum = df_wide_sw['sw'][df_wide_sw['ratio'] > 5].sum()
-    sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > 5].min()
+    # sw_sum = df_wide_sw['sw'][df_wide_sw['ratio'] > cf].sum()
+    sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > cf].min()
     return sw_min
 
-def sl_process(path):
+def sl_process(path, cf):
     sl = pd.read_csv(path, sep='\t')
     sl = sl.dropna()
     sl['SL_score'] = sl['SL_score'].astype(float)
     sl['random'] = (sl['random_SL_score'] * 2).round() / 2
     sl['sw'] = (sl['SL_score'] * 2).round() / 2
-    sl_s = sl[sl['SL_score'] > cutoff(sl)]
+    sl_s = sl[sl['SL_score'] > cutoff(sl, cf)]
     sl_s = sl_s[(sl_s['SL_type'] != 'random') & (sl_s['SL_type'] != 'SL1_unknown')]
     sl_s['SL'] = sl_s['SL_type'].apply(lambda x: 'SL1' if x == 'SL1' else 'SL2')
     return sl_s[['query_name', 'SL']]
@@ -444,7 +444,7 @@ def main(args):
     df_pos = sort_and_calc_distance(df_genes_with_cds)
     args.mapping=run_track_cluster(args.gff,args.bam)
     map_gene = read_map_info(args.mapping)
-    sl_ss = sl_process(args.input)
+    sl_ss = sl_process(args.input, args.cutoff)
     sl_ss_gene = pd.merge(sl_ss, map_gene, how='left', on='query_name')
     counts_re = count_process(sl_ss_gene[['gene', 'SL']], df_pos_dict)
     # median_value_all = counts_re['sum_count'].median()
@@ -469,5 +469,6 @@ if __name__ == '__main__':
     parser.add_argument("-i", "--input", type=str, required=True, help="input the SL detection file")
     parser.add_argument("-o", "--output", type=str,  default="SLRanger.gff",help="output operon detection file")
     parser.add_argument("-d", "--distance", type=int, default=5000, help="promoter scope")
+    parser.add_argument("-c", "--cutoff", type=float, default=5, help="cutoff of high confident SL sequence")
     args = parser.parse_args()
     main(args)
