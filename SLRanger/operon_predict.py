@@ -472,6 +472,6 @@ if __name__ == '__main__':
     parser.add_argument("-i", "--input", type=str, required=True, help="input the SL detection file")
     parser.add_argument("-o", "--output", type=str,  default="SLRanger.gff",help="output operon detection file")
     parser.add_argument("-d", "--distance", type=int, default=5000, help="promoter scope")
-    parser.add_argument("-c", "--cutoff", type=float, default=3, help="cutoff of high confident SL sequence")
+    parser.add_argument("-c", "--cutoff", type=float, default=4, help="cutoff of high confident SL sequence")
     args = parser.parse_args()
     main(args)
