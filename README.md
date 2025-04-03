@@ -75,7 +75,7 @@ options:
   -t CPU, --cpu CPU     CPU number (default: 4)
   -c CUTOFF, --cutoff CUTOFF
                         The value used to filter high confident SL reads. The higher the value, the stricter it is. 
-                        The range is between 0-10. (default: 5)                      
+                        The range is between 0-10. (default: 3)                      
 ```
 #### Output description
 
@@ -130,7 +130,7 @@ options:
                         promoter scope (default: 5000)
   -c CUTOFF, --cutoff CUTOFF
                         The value used to filter high confident SL reads. The higher the value, the stricter it is. 
-                        The range is between 0-10. (default: 5)                      
+                        The range is between 0-10. (default: 3)                      
 ```
 #### Output description
 A GFF file will be returned.

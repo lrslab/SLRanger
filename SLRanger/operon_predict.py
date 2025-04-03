@@ -319,12 +319,15 @@ def merge_single_gene_sublists(gene_list, gene_df):
         chromosome, strand, rank = gene_row['chromosome'].tolist()[0], gene_row['strand'].tolist()[0], gene_row['rank'].tolist()[0]
         rank_minus_1 = rank - 1
         rank_plus_1 = rank + 1
-        rank_minus_gene = gene_df[(gene_df['chromosome'] == chromosome) &
-                                  (gene_df['strand'] == strand) &
-                                  (gene_df['rank'] == rank_minus_1)]['gene'].tolist()[0]
-        rank_plus_gene = gene_df[(gene_df['chromosome'] == chromosome) &
-                                  (gene_df['strand'] == strand) &
-                                  (gene_df['rank'] == rank_plus_1)]['gene'].tolist()[0]
+        filtered_minus = gene_df[(gene_df['chromosome'] == chromosome) &
+                                 (gene_df['strand'] == strand) &
+                                 (gene_df['rank'] == rank_minus_1)]
+        rank_minus_gene = filtered_minus['gene'].tolist()[0] if not filtered_minus.empty else None
+
+        filtered_plus = gene_df[(gene_df['chromosome'] == chromosome) &
+                                (gene_df['strand'] == strand) &
+                                (gene_df['rank'] == rank_plus_1)]
+        rank_plus_gene = filtered_plus['gene'].tolist()[0] if not filtered_plus.empty else None
         target_sublist = []
         if rank_minus_gene in gene_to_sublists:
             target_sublist = list(gene_to_sublists[rank_minus_gene])
@@ -469,6 +472,6 @@ if __name__ == '__main__':
     parser.add_argument("-i", "--input", type=str, required=True, help="input the SL detection file")
     parser.add_argument("-o", "--output", type=str,  default="SLRanger.gff",help="output operon detection file")
     parser.add_argument("-d", "--distance", type=int, default=5000, help="promoter scope")
-    parser.add_argument("-c", "--cutoff", type=float, default=5, help="cutoff of high confident SL sequence")
+    parser.add_argument("-c", "--cutoff", type=float, default=3, help="cutoff of high confident SL sequence")
     args = parser.parse_args()
     main(args)
