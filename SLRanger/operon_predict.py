@@ -3,7 +3,6 @@ import re
 import argparse
 import pandas as pd
 from SLRanger.run_ex_function import run_track_cluster
-
 # 解析GFF文件并构建DataFrame
 def parse_gff(gff_file):
     genes = []
@@ -72,12 +71,6 @@ def parse_cds_gene(gff_file):
     df = pd.DataFrame({"gene": list(genes_with_cds)})
     return df
 
-def read_map_info(path):
-    map_info = pd.read_csv(path, sep='\t', header=None)
-    map_info_s = map_info.iloc[:, [3, -3]]
-    map_info_s.columns = ['query_name', 'gene']
-    return map_info_s
-
 # 排序基因并计算基因之间的距离
 def sort_and_calc_distance(df):
     df_pos_list = []
@@ -144,12 +137,12 @@ def sl_process(path, cf):
 
 def fusion_expand(df, genes_dict):
     result_df = pd.DataFrame(columns=df.columns)
-    df_with_or = df[df['gene'].str.contains('\|\|', regex=True)]
-    df_without_or = df[~df['gene'].str.contains('\|\|', regex=True)]
+    df_with_or = df[df['gene'].str.contains(';', regex=True)]
+    df_without_or = df[~df['gene'].str.contains(';', regex=True)]
     # 处理每一行
     for index, row in df_with_or.iterrows():
         gene = row['gene']
-        split_genes = gene.split("||")
+        split_genes = gene.split(";")
         temp_dict = {'gene': [], 'strand': [], 'chromosome': [],  'start': [], 'end': []}
         for gene in split_genes:
             if gene in genes_dict:
@@ -446,7 +439,7 @@ def main(args):
     df_pos_dict = df_genes_with_cds.set_index('gene').to_dict('index')
     df_pos = sort_and_calc_distance(df_genes_with_cds)
     args.mapping=run_track_cluster(args.gff,args.bam)
-    map_gene = read_map_info(args.mapping)
+    map_gene = pd.read_csv(args.mapping, sep='\t', names=['query_name', 'gene'])
     sl_ss = sl_process(args.input, args.cutoff)
     sl_ss_gene = pd.merge(sl_ss, map_gene, how='left', on='query_name')
     counts_re = count_process(sl_ss_gene[['gene', 'SL']], df_pos_dict)
