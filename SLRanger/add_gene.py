@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from trackcluster.utils import myexe, is_bin_in, get_file_prefix,del_files,get_file_location
 from trackcluster.tracklist import read_bigg, write_bigg, list_to_dic
 from trackcluster.pre import tracklist_add_gene,get_gendic_bedinter,group_bigg_by_gene
@@ -116,14 +117,11 @@ if __name__ == '__main__':
                     "the process is included in cluster runs. the new bigg file will be prefix_gene.bed"
     )
     parser.add_argument("-d", "--folder",
-                        # default=os.getcwd(),
-                        default='/t4/ywshao/cbr_cni_directrna/SL/SLRanger',
+                        default=os.getcwd(),
                         help="the folder contains all the seperated tracks in different locus/genes, default is the current dir")
     parser.add_argument("-s", "--sample",
-                        default='/t4/ywshao/cbr_cni_directrna/SL/SLRanger/SLRange_temp_20250409_180015/read_sort.bed',
                         help="the bigg format of the read track, with the key of GeneName")
     parser.add_argument("-r", "--reference",
-                        default='/t4/ywshao/cbr_cni_directrna/SL/SLRanger/SLRange_temp_20250409_180015/ref.bed',
                         help="the bigg format of the reference annotation track")
 
     args = parser.parse_args()

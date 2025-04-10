@@ -9,6 +9,8 @@ import multiprocessing
 import warnings
 from datetime import datetime
 import shutil
+
+
 def identify_file_path(file_path):
     if not os.path.exists(file_path):
         raise FileNotFoundError("File do not exist! Please check your path : " + file_path)
@@ -44,7 +46,7 @@ def run_track_cluster(gff_file,bam_file):
         run_cmd(bam2bigg_cmd)
         bedtools_cmd = 'bedtools sort -i '+folder_name+'read.bed'+' >'+folder_name+'read_sort.bed'
         run_cmd(bedtools_cmd)
-        track_cmd = "python ./SLRanger/addgene.py -r "+folder_name+'ref.bed'+" -s "+folder_name+"read_sort.bed"
+        track_cmd = "add_gene.py -r "+folder_name+'ref.bed'+" -s "+folder_name+"read_sort.bed"
         run_cmd(track_cmd)
     except Exception as e:
         print(e)

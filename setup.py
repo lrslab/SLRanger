@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="SLRanger",
-    version="0.0.0.6",
+    version="0.0.0.8",
     author="GUO Zhihao",
     author_email="qhuozhihao@icloud.com",
     description='An integrated approach for spliced leader detection and operon prediction in eukaryotes using long RNA reads',
@@ -24,15 +24,15 @@ setup(
         'numpy>=1.23.0,<2.0.0',
         'pandas>=2.1.0',
         'plotnine>=0.12.4',
-        'tqdm>=4.62.0',
+        'tqdm>=4.0.0',
         "pysam>=0.21.0",
         "biopython>=1.80",
         'pyssw==0.1.7',
         'trackcluster==0.1.7',
-        "scikit-learn>=1.2.2",
+        "scikit-learn>=1.0.2",
         'tabulate>=0.8.0',
         'Markdown>=3.5',
         'seaborn>0.12.0'
     ],
-    scripts=['SLRanger/SL_detect.py','SLRanger/operon_predict.py']
+    scripts=['SLRanger/SL_detect.py','SLRanger/operon_predict.py','SLRanger/add_gene.py']
 )
