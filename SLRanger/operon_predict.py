@@ -484,7 +484,8 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="help to know spliced leader and distinguish SL1 and SL2")
-    parser.add_argument("-g", "--gff", type=str, required=True, help="GFF annotation file")
+    parser.add_argument("-g", "--gff", type=str, required=True,
+                        help="GFF annotation file")
     parser.add_argument("-b", "--bam", type=str, required=True,help="bam file")
     parser.add_argument("-i", "--input", type=str, required=True, help="input the SL detection file")
     parser.add_argument("-o", "--output", type=str,  default="SLRanger.gff",help="output operon detection file")

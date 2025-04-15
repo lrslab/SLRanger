@@ -405,7 +405,6 @@ def visualize_html(output_file, cf):
     output_html = folder_name+"visualization_results.html"
     output_table_path = folder_name+"summary_table.csv"
     # 创建Markdown和HTML文件
-
     output_table.to_csv(output_table_path, index=False)
     create_image_gallery_md_html(output_table,image_paths, output_md, output_html)
     print(f"Markdown file has been created at: {output_md}")

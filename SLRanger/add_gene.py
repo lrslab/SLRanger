@@ -116,8 +116,7 @@ if __name__ == '__main__':
         description="Used to add gene annotation for read bigg tracks, useful in some analysis, "
                     "the process is included in cluster runs. the new bigg file will be prefix_gene.bed"
     )
-    parser.add_argument("-d", "--folder",
-                        default=os.getcwd(),
+    parser.add_argument("-d", "--folder", default=os.getcwd(),
                         help="the folder contains all the seperated tracks in different locus/genes, default is the current dir")
     parser.add_argument("-s", "--sample",
                         help="the bigg format of the read track, with the key of GeneName")

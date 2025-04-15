@@ -501,10 +501,8 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="help to know spliced leader and distinguish SL1 and SL2")
-    parser.add_argument("-r", "--ref", type=str, required=True,
-                        help="SL reference")
-    parser.add_argument("-b", "--bam", type=str, required=True,
-                        help="input the bam file")
+    parser.add_argument("-r", "--ref", type=str, required=True, help="SL reference")
+    parser.add_argument("-b", "--bam", type=str, required=True, help="input the bam file")
     parser.add_argument("-o", "--output", type=str, default="SLRanger.txt",
                         help="output file")
     parser.add_argument( "--visualization", action='store_true', help='Turn on the visualization mode')
