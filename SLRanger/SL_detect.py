@@ -441,8 +441,9 @@ def main(args):
     """
     sl_dict = fasta_to_dict(args.ref)
 
-    # 生成10个长度为SL1长度的碱基的随机序列
-    random_seq_len = len(sl_dict['SL1'])
+    # 生成10个长度为SL mean长度的碱基的随机序列
+    ref_lengths = [len(key) for key in sl_dict.values()]
+    random_seq_len = round(sum(ref_lengths) / len(ref_lengths))
     random.seed(826)
     random_sequences_dict = {}
     for i in range(10):

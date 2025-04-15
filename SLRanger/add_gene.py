@@ -47,7 +47,7 @@ def flow_add_gene(wkdir, prefix, bigg_gff_file, bigg_nano_file):
     out_fusion = prefix + "_fusion_inter.bed"
     # write the outfile to disk
     wrapper_bedtools_intersect2_select(outbed, bigg_gff_file, outfile=out_fusion,
-                                       fraction_bed1=0.01, fraction_bed2=0.5)
+                                       fraction_bed1=0.33, fraction_bed2=0.33)
 
     read_gene_single = get_gendic_bedinter(out_single)
     read_gene_fusion = get_gendic_bedinter(out_single)

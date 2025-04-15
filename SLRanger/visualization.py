@@ -21,8 +21,8 @@ def sw_ratio(df, cols):
     df_long = pd.melt(df, value_vars=cols, var_name='group', value_name='score')
     df_counts = df_long.groupby(['score', 'group']).size().reset_index(name='count')
     # len_dict={
-    #     'random':df_long[df_long['group']=='random'].shape[0],
-    #     'SL_seq':df_long[df_long['group']=='SL_seq'].shape[0]
+    #     'random_seq':df_long[df_long['group']=='random_seq'].shape[0],
+    #     'SL_reference':df_long[df_long['group']=='SL_reference'].shape[0]
     # }
     # df_counts['count'] = df_counts.apply(lambda x: len_dict[x['group']]-x['count'], axis=1)
     df_wide = df_counts.pivot(index='score', columns='group', values='count').fillna(0)
@@ -31,20 +31,20 @@ def sw_ratio(df, cols):
     return df_wide
 
 def plot_cumulative_line(data, output_name, cf):
-    df_wide_sw = sw_ratio(data, ['random', 'SL_seq'])
+    df_wide_sw = sw_ratio(data, ['random_seq', 'SL_reference'])
     df_wide_sw.reset_index(inplace=True)
-    # sw_sum = df_wide_sw['SL_seq'][df_wide_sw['ratio'] > 5].sum()
+    # sw_sum = df_wide_sw['SL_reference'][df_wide_sw['ratio'] > 5].sum()
     sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > cf].min()
 
     # Set ratios > 50 to infinity
     # df_wide_sw.loc[df_wide_sw['ratio'] > 50, 'ratio'] = np.inf
-    # df_wide_sw['SL_seq'] = df_wide_sw['SL_seq'].sum() - df_wide_sw['SL_seq']
-    # df_wide_sw['random'] = df_wide_sw['random'].sum() - df_wide_sw['random']
-    # df_wide_sw['cumulative_sw'] = df_wide_sw['SL_seq'].cumsum()
-    # df_wide_sw['cumulative_random'] = df_wide_sw['random'].cumsum()
-    df_wide_sw['SL_seq'] = df_wide_sw['SL_seq'][::-1].cumsum()[::-1]
-    df_wide_sw['random'] = df_wide_sw['random'][::-1].cumsum()[::-1]
-    plot_df = pd.melt(df_wide_sw,id_vars=['score'],value_vars=['SL_seq', 'random'])
+    # df_wide_sw['SL_reference'] = df_wide_sw['SL_reference'].sum() - df_wide_sw['SL_reference']
+    # df_wide_sw['random_seq'] = df_wide_sw['random_seq'].sum() - df_wide_sw['random_seq']
+    # df_wide_sw['cumulative_sw'] = df_wide_sw['SL_reference'].cumsum()
+    # df_wide_sw['cumulative_random'] = df_wide_sw['random_seq'].cumsum()
+    df_wide_sw['SL_reference'] = df_wide_sw['SL_reference'][::-1].cumsum()[::-1]
+    df_wide_sw['random_seq'] = df_wide_sw['random_seq'][::-1].cumsum()[::-1]
+    plot_df = pd.melt(df_wide_sw,id_vars=['score'],value_vars=['SL_reference', 'random_seq'])
 
     # Create cumulative line plot
     tick_step = 5
@@ -356,14 +356,14 @@ def visualize_html(output_file, cf):
     # Calculate AUC
     # SW processing
     data = df.copy()
-    data['random'] = data['random_sw_score'].round(0)
-    data['SL_seq'] = data['sw_score'].round(0)
+    data['random_seq'] = data['random_sw_score'].round(0)
+    data['SL_reference'] = data['sw_score'].round(0)
     sw_min = plot_cumulative_line(data, folder_name+'cumulative_int_sw.png', cf)
 
     # SL processing
     data = df.copy()
-    data['random'] = (data['random_SL_score'] * 2).round() / 2
-    data['SL_seq'] = (data['SL_score'] * 2).round() / 2
+    data['random_seq'] = (data['random_SL_score'] * 2).round() / 2
+    data['SL_reference'] = (data['SL_score'] * 2).round() / 2
     sl_min = plot_cumulative_line(data, folder_name+'cumulative_int_sl.png', cf)
 
     df = df[df['SL_type'] != 'random']

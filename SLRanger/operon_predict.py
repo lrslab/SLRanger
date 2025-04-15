@@ -164,10 +164,9 @@ def fusion_expand(df, genes_dict):
                 max_start = min_start + (min_end - min_start)/2
                 new_row['gene'] = min_start_gene
                 result_df = pd.concat([result_df, pd.DataFrame([new_row])], ignore_index=True)
-                for start in temp_dict['start']:
-                    if min_start < start <= max_start:  # 与最小 start 差值不超过 300bp
-                        start_index = temp_dict['start'].index(start)
-                        new_row['gene'] = temp_dict['gene'][start_index]
+                for i, start in enumerate(temp_dict['start']):
+                    if min_start <= start <= max_start:  # 与最小 start 差值不超过 300bp
+                        new_row['gene'] = temp_dict['gene'][i]
                         result_df = pd.concat([result_df, pd.DataFrame([new_row])], ignore_index=True)
             elif all_minus:
                 max_end = max(temp_dict['end'])
@@ -177,17 +176,39 @@ def fusion_expand(df, genes_dict):
                 min_end = max_end - (max_end - max_start)/2
                 new_row['gene'] = max_end_gene
                 result_df = pd.concat([result_df, pd.DataFrame([new_row])], ignore_index=True)
-                for end in temp_dict['end']:
-                    if min_end < end <= max_end:  # 与最小 start 差值不超过 300bp
-                        end_index = temp_dict['end'].index(end)
-                        new_row['gene'] = temp_dict['gene'][end_index]
+                for i, end in enumerate(temp_dict['end']):
+                    if min_end <= end <= max_end:  # 与最小 start 差值不超过 300bp
+                        new_row['gene'] = temp_dict['gene'][i]
                         result_df = pd.concat([result_df, pd.DataFrame([new_row])], ignore_index=True)
         elif len(temp_dict['gene']) == 1:
             new_row['gene'] = temp_dict['gene'][0]
             result_df = pd.concat([result_df, pd.DataFrame([new_row])], ignore_index=True)
 
     result_df = pd.concat([df_without_or, result_df], ignore_index=True)
-    return result_df
+    return result_df, df_with_or
+
+def fusion_to_ref(df, genes_df):
+    df['group_id'] = [f'FS{str(i + 1).zfill(4)}' for i in range(len(df))]
+
+    # 第二步：按"||"分割并展开
+    df_expanded = df.assign(gene=df['gene'].str.split(';')).explode('gene')
+    filtered_df = df_expanded[df_expanded['gene'].isin(genes_df['gene'])]
+    value_counts = filtered_df['group_id'].value_counts()
+    # 筛选出出现次数大于1的值
+    duplicated_values = value_counts[value_counts > 1].index
+    # 保留这些值的行
+    filtered_df_s = filtered_df[filtered_df['group_id'].isin(duplicated_values)]
+    filtered_df_s = pd.merge(filtered_df_s, genes_df, on='gene', how='left')
+    # 第三步：为每个基因添加带序号的编码
+    filtered_df_s = filtered_df_s.sort_values(['group_id', 'rank'])
+    filtered_df_s['gene_id'] = filtered_df_s.groupby('group_id').cumcount() + 1
+
+    filtered_df_s['gene_id'] = filtered_df_s['group_id'] + '_' + filtered_df_s['gene_id'].astype(str)
+    filtered_df_ss = filtered_df_s[filtered_df_s['count']>3]
+    result = [tuple(group['gene']) for _, group in filtered_df_ss.groupby('group_id')]
+    # result = filtered_df_ss.groupby('group_id')['gene'].apply(list).to_dict()
+
+    return result
 
 def reshape(df_input):
     gene_data = {}
@@ -228,7 +249,7 @@ def operon_ref_process(path):
 
     return gene_add_df, pd.DataFrame(expanded_rows)
 
-def extract_operon_names(df, median_value_sl2):
+def extract_operon_names(df, count_fusion, median_value_sl2):
     operons = []
     i = 0
     n = df.shape[0]
@@ -241,6 +262,8 @@ def extract_operon_names(df, median_value_sl2):
                     operon_genes.append(df.loc[i - 1, 'gene'])
                 elif (pd.isna(df.loc[i - 1, 'type']) and df.loc[i, 'type'] == 'SL2'
                       and df.loc[i, 'SL2'] >= median_value_sl2):
+                    operon_genes.append(df.loc[i - 1, 'gene'])
+                elif (any((df.loc[i - 1, 'gene'] in tup and df.loc[i, 'gene'] in tup) for tup in count_fusion)):
                     operon_genes.append(df.loc[i - 1, 'gene'])
             operon_genes.append(df.loc[i, 'gene'])
             sum_counts += df.loc[i, 'sum_count']
@@ -260,7 +283,7 @@ def extract_operon_names(df, median_value_sl2):
 
     return operons
 
-def group_genes_into_operons(df, distance, median_value_sl2):
+def group_genes_into_operons(df, count_fusion, distance, median_value_sl2):
     operons = []
     current_operon = []
 
@@ -286,7 +309,7 @@ def group_genes_into_operons(df, distance, median_value_sl2):
             operon_df = operon_df.reset_index(drop=True)
             # value = operon_df['rank'].iloc[0]
             # chr= operon_df['chromosome'].iloc[0]
-            operons_t = extract_operon_names(operon_df, median_value_sl2)
+            operons_t = extract_operon_names(operon_df, count_fusion, median_value_sl2)
 
             if operons_t:
                 operon_list.extend(operons_t)
@@ -313,8 +336,8 @@ def merge_single_gene_sublists(gene_list, gene_df):
         rank_minus_1 = rank - 1
         rank_plus_1 = rank + 1
         filtered_minus = gene_df[(gene_df['chromosome'] == chromosome) &
-                                 (gene_df['strand'] == strand) &
-                                 (gene_df['rank'] == rank_minus_1)]
+                                  (gene_df['strand'] == strand) &
+                                  (gene_df['rank'] == rank_minus_1)]
         rank_minus_gene = filtered_minus['gene'].tolist()[0] if not filtered_minus.empty else None
 
         filtered_plus = gene_df[(gene_df['chromosome'] == chromosome) &
@@ -414,9 +437,10 @@ def generate_operon_gff(gene_combinations, gene_dict):
 
     return df_sorted
 
-def count_process(df, genes_dict):
+def count_process(df, df_pos, genes_dict):
     counts = df.value_counts().reset_index()
-    counts_expand = fusion_expand(counts, genes_dict)
+    counts_expand, counts_fusion = fusion_expand(counts, genes_dict)
+    fusion_ref = fusion_to_ref(counts_fusion, df_pos)
     counts_s = counts_expand.groupby(['gene', 'SL'])['count'].sum().reset_index()
     # has_semicolon = counts_filtered[counts_filtered['sort_fusion'].str.contains(';', na=False)]
     counts_re = reshape(counts_s)
@@ -428,21 +452,21 @@ def count_process(df, genes_dict):
     # 满足条件的行赋值为 'SL2'
     counts_re.loc[(counts_re['SL2'] > 5) & (counts_re['sl2_ratio'] >= 0.25), 'type2'] = 'SL2'
 
-    return counts_re
+    return counts_re, fusion_ref
 
 def main(args):
     print("Detection start ...")
-    gff_file = args.gff
+    gff_file = args.refer
     df_genes = parse_gff(gff_file)
     df_genes_filter = parse_cds_gene(gff_file)
     df_genes_with_cds = pd.merge(df_genes, df_genes_filter, on='gene', how='right')
-    df_pos_dict = df_genes_with_cds.set_index('gene').to_dict('index')
     df_pos = sort_and_calc_distance(df_genes_with_cds)
+    df_pos_dict = df_genes_with_cds.set_index('gene').to_dict('index')
     args.mapping=run_track_cluster(args.gff,args.bam)
     map_gene = pd.read_csv(args.mapping, sep='\t', names=['query_name', 'gene'])
     sl_ss = sl_process(args.input, args.cutoff)
     sl_ss_gene = pd.merge(sl_ss, map_gene, how='left', on='query_name')
-    counts_re = count_process(sl_ss_gene[['gene', 'SL']], df_pos_dict)
+    counts_re, count_fusion = count_process(sl_ss_gene[['gene', 'SL']], df_pos, df_pos_dict)
     # median_value_all = counts_re['sum_count'].median()
     median_value_sl2 = counts_re[counts_re['type2'] == 'SL2']['SL2'].median()
     counts_re = pd.merge(counts_re, df_pos, how='right', on='gene')
