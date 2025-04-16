@@ -456,7 +456,7 @@ def count_process(df, df_pos, genes_dict):
 
 def main(args):
     print("Detection start ...")
-    gff_file = args.refer
+    gff_file = args.gff
     df_genes = parse_gff(gff_file)
     df_genes_filter = parse_cds_gene(gff_file)
     df_genes_with_cds = pd.merge(df_genes, df_genes_filter, on='gene', how='right')
@@ -472,7 +472,7 @@ def main(args):
     counts_re = pd.merge(counts_re, df_pos, how='right', on='gene')
     counts_re['sum_count'] = counts_re['sum_count'].fillna(0)
 
-    operon_result = group_genes_into_operons(counts_re, args.distance, median_value_sl2)
+    operon_result = group_genes_into_operons(counts_re, count_fusion, args.distance, median_value_sl2)
     updated_gene_list = merge_single_gene_sublists(operon_result, df_pos)
 
     # operon_combination = pd.DataFrame([','.join(sublist) for sublist in updated_gene_list])
