@@ -83,7 +83,7 @@ def plot_aligned_length(df,folder_name):
             return int(match.group(1))  # 返回数字部分并转换为整数
         return 0  # 如果没有匹配到，返回 0（可以根据需要调整）
     # unknown will be merged together and SL1 separated
-    # df['SL_type'].apply(lambda x: if 'unkown'(x))
+    # df['SL_type'].apply(lambda x: if 'unknown'(x))
 
     result_list=['SL1','SL2','SL3','SL4','SL5','SL6','SL7','SL8','SL9','SL10','SL11','SL12','SL13','SL1_unknown','SL2_unknown']
     colors_13 = [
