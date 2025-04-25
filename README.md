@@ -7,7 +7,7 @@ An integrated approach for spliced leader detection and operon prediction in euk
 ## Workflow
 
 <div align="center">
-  <img src="document/Workflow.png" width="700" alt="Workflow">
+  <img src="document/workflow.png" width="700" alt="Workflow">
 </div>
 
  **(A)** A schematic diagram illustrates the direct RNA sequencing workflow for species exhibiting trans-splicing. In such species, spliced leader (SL) sequences are located at the 5′ ends of RNA reads due to the trans-splicing mechanism. Mature mRNAs containing SL sequences are sequenced using Oxford Nanopore direct RNA sequencing, and the resulting long reads are subsequently aligned to the reference genome. 
