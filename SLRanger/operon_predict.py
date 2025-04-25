@@ -4,9 +4,10 @@ import argparse
 import pandas as pd
 from SLRanger.run_ex_function import run_track_cluster
 import warnings
-
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=DeprecationWarning)  # 如果使用plotnine可能需要
+warnings.filterwarnings('ignore', category=pd.errors.SettingWithCopyWarning)  # 如果使用plotnine可能需要
+
 # 解析GFF文件并构建DataFrame
 def parse_gff(gff_file):
     genes = []
