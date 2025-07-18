@@ -125,8 +125,9 @@ def sw_ratio(df, cols):
 def cutoff(data, cf):
     df_wide_sw = sw_ratio(data, ['random', 'sw'])
     df_wide_sw.reset_index(inplace=True)
-    # sw_sum = df_wide_sw['sw'][df_wide_sw['ratio'] > cf].sum()
-    sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > cf].min()
+    df_wide_sw_s = df_wide_sw[df_wide_sw['score'] > 3] ### 有些值太低会有问题
+    # sw_sum = df_wide_sw['sw'][df_wide_sw['ratio'] > 5].sum()
+    sw_min = df_wide_sw_s['score'][df_wide_sw_s['ratio'] > cf].min()
     return sw_min
 
 def sl_process(path, cf):

@@ -10,7 +10,6 @@ import random
 import multiprocessing
 from tqdm import tqdm
 import time
-from SLRanger.visualization import visualize_html
 
 def fasta_to_dict(fasta_path):
     fasta_dict = {}
@@ -31,7 +30,6 @@ def fasta_to_dict(fasta_path):
         if current_key:
             fasta_dict[current_key] = ''.join(sequence_parts)
     return fasta_dict
-
 
 def generate_mismatches(kmer, bases=['A', 'T', 'C', 'G']):
     mismatches = set()
@@ -55,6 +53,27 @@ def build_mismatch_index(sequences, k):
 
     return mismatch_to_kmer
 
+def get_sequences_by_length(dictionary):
+    # 按键排序
+    sorted_keys = sorted(dictionary.keys())
+    # 用于跟踪已处理的长度
+    seen_lengths = set()
+    # 结果字典
+    result = {}
+
+    # 遍历排序后的键
+    for key in sorted_keys:
+        sequence = dictionary[key]
+        seq_length = len(sequence)
+        # 如果该长度尚未处理，添加到结果
+        if seq_length not in seen_lengths:
+            result[key] = {
+                'sequence': sequence,  # 原始序列
+                'length': seq_length  # 序列长度
+            }
+            seen_lengths.add(seq_length)
+
+    return result
 
 def extract_kmers(sequences, k):
     kmer_id = {}
@@ -129,11 +148,10 @@ def find_best_match(query, mismatch_to_kmer, kmer_to_refs, k):
 
     return max_intersection, max_consecutive, best_consecutive_end
 
-
 def soft_processed(sequence, strand, cigar):
     """
     根据 strand 和 cigar 信息提取指定长度的序列部分。
-
+    为direct RNA设置
     参数:
     - sequence (str): 原始的序列字符串。这个sequence已经被reverse处理过了，与正链一致，所以取序列的时候都从开头取起
     - strand (str): 链方向，"+" 或 "-"。
@@ -159,6 +177,31 @@ def soft_processed(sequence, strand, cigar):
         # 不符合条件时，返回原始序列
         return ""
 
+def soft_extract(sequence, cigar):
+    """
+    根据 strand 和 cigar 信息提取指定长度的序列部分。
+    取两头，为双链cDNA而设置
+    参数:
+    - sequence (str): 原始的序列字符串
+    - cigar (list of tuples): CIGAR 信息，表示为列表的元组 (operation, length)。
+                              例如 [(4, 5), (0, 50)] 表示 5 bp 的 soft clipping，接着是 50 bp 的匹配。
+    返回:
+    - str: 根据条件截取后的序列。再多加两个碱基在后面
+    """
+    seq_5 = []
+    query_re_3 = []
+    if cigar[0][0] == 4:
+        soft_clip_length = cigar[0][1]
+        # 返回从序列开头截取 soft_clip_length 长度的序列部分
+        seq_5 = sequence[:soft_clip_length + 2]  #
+
+    if cigar[-1][0] == 4:
+        soft_clip_length = cigar[-1][1]
+        # 返回从序列尾部截取 soft_clip_length 长度的序列部分
+        seq_3 = sequence[-(soft_clip_length + 2):]  #
+        query_re_3 = str(Seq(seq_3).reverse_complement())
+
+    return seq_5, query_re_3
 
 def ssw_wrapper(seq1, seq2, match=1, mismatch=1, gap_open=1, gap_extend=1):
     """
@@ -246,19 +289,38 @@ def consensus(ref, query, cigar_string, ref_shift=0, query_shift = 0):
 
     return "".join(cons)   # "".join(cons), "".join(query_out), "".join(ref_out)
 
-def score_calculate(sw_score, max_intersection, max_consecutive, ref_end, ref_length, seq_start, seq_length, soft_length):
+def drs_score_calculate(sw_score, max_intersection, max_consecutive, ref_end, ref_length, random_seq_len, seq_start, soft_length):
     # factor = get_value(best_end, ref_length - k)
 
     score_seq = (1 - seq_start/soft_length) # * (seq_length/soft_length)  # 在soft clipping中的位置，越靠头部越好
     # score_ref = 1 - (ref_length - ref_end)/ref_length
-    score_ref = 1 - (ref_length - ref_end)/25   #(SL1_len - k)*2
+    score_ref = 1 - (ref_length - ref_end)/(random_seq_len + 3)    #(SL1_len - k)*2
     score_kmer = 0.5 * (max_intersection + max_consecutive - 1)
     score = score_seq * score_ref * (sw_score + score_kmer)
 
     final_score = max(score, 0)
     return final_score
 
-def length_index(SL, ref_seq, kmer, mismatch_to_kmer, k):
+def cdna_score_calculate(sw_score, max_intersection, max_consecutive, ref_end, ref_length, random_seq_len, seq_end, soft_length):
+    # factor = get_value(best_end, ref_length - k)
+
+    score_seq = seq_end/soft_length # * (seq_length/soft_length)  # 在soft clipping中的位置，越靠alignment region越好
+    # score_ref = 1 - (ref_length - ref_end)/ref_length
+    score_ref = 1 - (ref_length - ref_end)/(random_seq_len + 3)   #(SL1_len - k)*2
+    score_kmer = 0.5 * (max_intersection + max_consecutive - 1)
+    score = score_seq * score_ref * (sw_score + score_kmer)
+
+    final_score = max(score, 0)
+    return final_score
+
+def ref_score_calculate(sw_score, max_intersection, max_consecutive):
+    score_kmer = 0.5 * (max_intersection + max_consecutive - 1)
+    score = (sw_score + score_kmer)
+
+    final_score = max(score, 0)
+    return final_score
+
+def length_index(SL, ref_seq, kmer, mismatch_to_kmer, random_seq_len, k):
     dict = {}
 
     for i in range(k, len(ref_seq) + 1):
@@ -267,7 +329,7 @@ def length_index(SL, ref_seq, kmer, mismatch_to_kmer, k):
         sw_score = sw_aln.score
         # ref_start = sw_aln.ref_begin
         # ref_end = sw_aln.ref_end
-        read_start = sw_aln.query_begin
+        # read_start = sw_aln.query_begin
         read_end = sw_aln.query_end + 1
         # sw_cigar = sw_aln.cigar_string
 
@@ -275,12 +337,11 @@ def length_index(SL, ref_seq, kmer, mismatch_to_kmer, k):
         # last_three_chars = corrected_sequence_sw[-3:]
         seq_s_length = len(corrected_sequence_sw)
         ref_length = len(ref_seq)
-        seq_length = read_end - read_start
+        # seq_length = read_end - read_start
         kmer_to_refs = kmer[SL]
         max_intersection, max_consecutive, best_end = find_best_match(corrected_sequence_sw, mismatch_to_kmer,
                                                                       kmer_to_refs, k)
-        final_score = score_calculate(sw_score, max_intersection, max_consecutive, ref_length, ref_length,
-                                      read_start, seq_s_length, len(ref_seq_s))
+        final_score = ref_score_calculate(sw_score, max_intersection, max_consecutive)
         dict[i] = final_score
 
     return dict
@@ -294,10 +355,11 @@ def final_score_process(final_score, ref_length, seq_s_length, length_score):
         # final_score_normalized = 100 * (final_score / (seq_s_length / ref_length * length_score[ref_length]))
     return SL_score # final_score_normalized
 
-def random_score(random_sequences_dict, random_kmer, random_mismatch_to_kmer, length_score, corrected_sequence, k):
+def random_score(random_sequences_dict, random_kmer, random_mismatch_to_kmer,length_scores, random_seq_len, corrected_sequence, k):
     random_sw_score_max = 0
     random_final_score_max = 0
     random_SL_score_max = 0
+    length_score = length_scores[random_seq_len]
     for key, random_seq in random_sequences_dict.items():
         random_length_score = length_score
         random_aln_sw = ssw_wrapper(random_seq, corrected_sequence)
@@ -314,9 +376,12 @@ def random_score(random_sequences_dict, random_kmer, random_mismatch_to_kmer, le
             max_intersection, max_consecutive, best_end = find_best_match(corrected_sequence_sw,
                                                                           random_mismatch_to_kmer,
                                                                           kmer_to_refs, k)
-            random_final_score = score_calculate(random_sw_score, max_intersection, max_consecutive,
-                                                 random_ref_end, random_ref_length, random_read_start,
-                                                 seq_s_length, len(corrected_sequence))
+            if mode == 'RNA':
+                random_final_score = drs_score_calculate(random_sw_score, max_intersection, max_consecutive, random_ref_end,
+                                                 random_ref_length, random_seq_len, random_read_start, len(corrected_sequence))
+            else:
+                random_final_score = cdna_score_calculate(random_sw_score, max_intersection, max_consecutive, random_ref_end,
+                                                 random_ref_length, random_seq_len, random_read_end, len(corrected_sequence))
             random_SL_score = final_score_process(random_final_score, random_ref_length,
                                                   seq_s_length, random_length_score)
             if random_SL_score > random_SL_score_max:
@@ -331,10 +396,15 @@ def update(*a):
         outfile.write(a[0])
     pbar.update(1)
 
-def calculation_per_process(item,sl_dict,length_scores,random_sequences_dict ,random_kmer,random_mismatch_to_kmer,k,kmer,mismatch_to_kmer):
+def drs_calculation_per_process(item,sl_dict,length_scores,random_sequences_dict,random_seq_len,random_kmer,
+                                random_mismatch_to_kmer,k,kmer,mismatch_to_kmer):
     query_name = item[0]
-    query_seq = item[1]
+    full_query_sequence = item[1]
     strand = item[2]
+    if strand == '-':
+        query_seq = str(Seq(full_query_sequence).reverse_complement())  # 序列映射到负链，需要反向互补处理
+    else:
+        query_seq = full_query_sequence  # 序列映射到正链，直接使用
 
     corrected_sequence = soft_processed(query_seq, strand, item[3])
     aligned_len = item[4]
@@ -358,7 +428,7 @@ def calculation_per_process(item,sl_dict,length_scores,random_sequences_dict ,ra
     ### use SL1 seq for SW check
     SL_sw_dict = {}
     for SL, SEQ in sl_dict.items():
-        length_score = length_scores[SL]
+        length_score = length_scores[len(SEQ)]
         # corrected_sequence = 'CAAG'
         sw_aln = ssw_wrapper(SEQ, corrected_sequence)  # score>10,
         sw_score = sw_aln.score
@@ -374,7 +444,7 @@ def calculation_per_process(item,sl_dict,length_scores,random_sequences_dict ,ra
         random_sw_score_max, random_final_score_max, random_SL_score_max = random_score(random_sequences_dict,
                                                                                         random_kmer,
                                                                                         random_mismatch_to_kmer,
-                                                                                        length_scores['SL1'],
+                                                                                        length_scores, random_seq_len,
                                                                                         corrected_sequence, k)
         if seq_s_length >= k:
             sw_ref = SEQ[ref_start:ref_end]
@@ -386,9 +456,8 @@ def calculation_per_process(item,sl_dict,length_scores,random_sequences_dict ,ra
             kmer_to_refs = kmer[SL]
             max_intersection, max_consecutive, best_end = find_best_match(corrected_sequence_sw, mismatch_to_kmer,
                                                                           kmer_to_refs, k)
-            final_score = score_calculate(sw_score, max_intersection, max_consecutive, ref_end, ref_length,
-                                          read_start, seq_s_length,
-                                          soft_length)  # sw_score, max_intersection, max_consecutive, ref_end, ref_length, seq_start, seq_length, soft_length
+            final_score = drs_score_calculate(sw_score, max_intersection, max_consecutive, ref_end, ref_length,
+                                          random_seq_len, read_start, soft_length) # sw_score, max_intersection, max_consecutive, ref_end, ref_length, seq_start, seq_length, soft_length
             SL_score = final_score_process(final_score, ref_length, seq_s_length, length_score)
 
             SL_sw_dict[SL] = {'read_end': read_end,
@@ -429,19 +498,159 @@ def calculation_per_process(item,sl_dict,length_scores,random_sequences_dict ,ra
         mes = mes + '\t'.join([str(value) for value in filtered_df_s.iloc[0]]) + '\t' + 'random' + "\n"
     return mes
 
+def cdna_calculation_per_process(item,sl_dict,length_scores,random_sequences_dict,random_seq_len,random_kmer,
+                                 random_mismatch_to_kmer,k,kmer,mismatch_to_kmer):
+    query_name = item[0]
+    query_seq = item[1]
+    strand = item[2]
+    aligned_len = item[4]
+    seq_5, seq_3 = soft_extract(query_seq, item[3])
+    candidate_seq = [seq_5, seq_3]
+
+    if seq_5 is None and seq_3 is None:
+        mes = query_name + '\t' + strand + '\t' + 'NA' + str(aligned_len) + '\t'  # with soft_processed
+        SL_sw_dict = {'read_end': 'NA', 'query_length': 'NA',
+                      'consensus': 'NA', 'random_sw_score': 'NA',
+                      'random_final_score': 'NA', 'random_SL_score': 'NA',
+                      'sw_score': 'NA', 'final_score': 'NA',
+                      'SL_score': 'NA'}
+        mes = mes + '\t'.join([str(value) for value in SL_sw_dict.values()]) + '\t' + 'random' + "\n"
+        return mes
+    elif len(seq_5) < 5 and len(seq_3) < 5:
+        soft_length = max(len(seq_5), len(seq_3))
+        mes = query_name + '\t' + strand + '\t' + str(soft_length) + str(aligned_len) + '\t'  # with soft_processed
+        SL_sw_dict = {'read_end': 'NA', 'query_length': 'NA',
+                      'consensus': 'NA', 'random_sw_score': 'NA',
+                      'random_final_score': 'NA', 'random_SL_score': 'NA',
+                      'sw_score': 'NA', 'final_score': 'NA',
+                      'SL_score': 'NA'}
+        mes = mes + '\t'.join([str(value) for value in SL_sw_dict.values()]) + '\t' + 'random' + "\n"
+        return mes
+
+    results = []
+    for corrected_sequence in candidate_seq:
+        soft_length = len(corrected_sequence)
+        ### use SL1 seq for SW check
+        SL_sw_dict = {}
+        for SL, SEQ in sl_dict.items():
+            length_score = length_scores[len(SEQ)]
+            # corrected_sequence = 'CAAG'
+            sw_aln = ssw_wrapper(SEQ, corrected_sequence)  # score>10,
+            sw_score = sw_aln.score
+            ref_start = sw_aln.ref_begin
+            ref_end = sw_aln.ref_end
+            read_start = sw_aln.query_begin
+            read_end = sw_aln.query_end + 1
+            sw_cigar = sw_aln.cigar_string
+
+            corrected_sequence_sw = corrected_sequence[read_start:read_end]
+
+            seq_s_length = len(corrected_sequence_sw)
+            random_sw_score_max, random_final_score_max, random_SL_score_max = random_score(random_sequences_dict,
+                                                                                            random_kmer,
+                                                                                            random_mismatch_to_kmer,
+                                                                                            length_scores,
+                                                                                            random_seq_len,
+                                                                                            corrected_sequence, k)
+            if seq_s_length >= k:
+                sw_ref = SEQ[ref_start:ref_end]
+
+                # print("\n".join(consensus(corrected_sequence_sw, sw_ref, sw_cigar, 0)))
+                # last_three_chars = corrected_sequence_sw[-3:]
+                con_seq = consensus(sw_ref, corrected_sequence_sw, sw_cigar, 0)
+                ref_length = len(SEQ)
+                kmer_to_refs = kmer[SL]
+                max_intersection, max_consecutive, best_end = find_best_match(corrected_sequence_sw, mismatch_to_kmer,
+                                                                              kmer_to_refs, k)
+                final_score = cdna_score_calculate(sw_score, max_intersection, max_consecutive, ref_end, ref_length,
+                                              random_seq_len, read_end, soft_length)  # sw_score, max_intersection, max_consecutive, ref_end, ref_length, seq_start, seq_length, soft_length
+                SL_score = final_score_process(final_score, ref_length, seq_s_length, length_score)
+
+                SL_sw_dict[SL] = {'read_end': read_end,
+                                  'query_length': seq_s_length,
+                                  'consensus': con_seq,
+                                  'random_sw_score': random_sw_score_max,
+                                  'random_final_score': round(random_final_score_max, 2),
+                                  'random_SL_score': round(random_SL_score_max, 2),
+                                  'sw_score': sw_score,
+                                  'final_score': round(final_score, 2),
+                                  'SL_score': round(SL_score, 2)
+                                  }
+            else:
+                SL_sw_dict[SL] = {'read_end': read_end,
+                                  'query_length': None,
+                                  'consensus': None,
+                                  'random_sw_score': 0,
+                                  'random_final_score': 0,
+                                  'random_SL_score': 0,
+                                  'sw_score': 0,
+                                  'final_score': 0,
+                                  'SL_score': 0
+                                  }
+
+        SL_sw_df = pd.DataFrame.from_dict(SL_sw_dict, orient='index')
+        SL_sw_df_s = SL_sw_df[SL_sw_df['SL_score'] > SL_sw_df['random_SL_score']]
+        sl_max = 0 if pd.isna(SL_sw_df_s['SL_score'].max()) else SL_sw_df_s['SL_score'].max()
+        sl_max_f = SL_sw_df['SL_score'].max()
+        filtered_df = SL_sw_df_s[SL_sw_df_s['SL_score'] == sl_max]
+        filtered_df_f = SL_sw_df[SL_sw_df['SL_score'] == sl_max_f]
+        results.append({
+            "soft_length": soft_length,
+            "sl_max": sl_max,
+            "sl_max_f": sl_max_f,
+            "filtered_df": filtered_df,
+            "filtered_df_f": filtered_df_f
+        })
+    best_filtered_df = []
+    best_filtered_df_f = []
+    if len(results) == 1:
+        # 只有一个非空序列，直接使用其 filtered_df
+        soft_length = results[0]['soft_length']
+        best_filtered_df = results[0]["filtered_df"]
+    elif len(results) == 2:
+        seq1, seq2 = results
+        # 情况 1: 至少有一个 sl_max > 0，选择 sl_max 较大的
+        if seq1["sl_max"] > 0 or seq2["sl_max"] > 0:
+            if seq1["sl_max"] > seq2["sl_max"]:
+                best_filtered_df = seq1["filtered_df"]
+                soft_length = seq1["soft_length"]
+            else:
+                best_filtered_df = seq2["filtered_df"]
+                soft_length = seq2["soft_length"]
+                # 情况 2: 两个 sl_max <= 0，比较 sl_max_f，选择 sl_max_f 较小的
+        else:
+            if seq1["sl_max_f"] >= seq2["sl_max_f"]:
+                best_filtered_df_f = seq1["filtered_df_f"]
+                soft_length = seq1["soft_length"]
+            else:
+                best_filtered_df_f = seq2["filtered_df_f"]
+                soft_length = seq2["soft_length"]
+
+    mes = query_name + '\t' + strand + '\t' + str(soft_length) + '\t' + str(aligned_len) + '\t'  # with soft_processed
+    if len(best_filtered_df) > 1:
+        mes = mes + '\t'.join([str(value) for value in best_filtered_df.iloc[0]]) + '\t' + best_filtered_df.index[
+                0] + '_unknown' + "\n"
+    elif len(best_filtered_df) == 1:
+        mes = mes + '\t'.join([str(value) for value in best_filtered_df.iloc[0]]) + '\t' + best_filtered_df.index[
+                0] + "\n"
+    else:
+        mes = mes + '\t'.join([str(value) for value in best_filtered_df_f.iloc[0]]) + '\t' + 'random' + "\n"
+
+    return mes
 
 def main(args):
-    global outfile, pbar
+    global outfile, pbar, mode
     """
-    NM comparison between SL1 and SL2
+    SW comparison between SL1 and SL2
     read reads in bam
     write out a dataframe that including:
         query name, 22nt sequence, SW score, SL1 score, SL2 score, SL1 cigar, SL2 cigar ,SL type
         query name, selected 22nt sequence with soft clipping...
     """
-    sl_dict = fasta_to_dict(args.ref)
+    mode = args.mode
+    sl_dict = fasta_to_dict(args.refer)
 
-    # 生成10个长度为SL mean长度的碱基的随机序列
+    # 生成10个长度为SL1长度的碱基的随机序列
     ref_lengths = [len(key) for key in sl_dict.values()]
     random_seq_len = round(sum(ref_lengths) / len(ref_lengths))
     random.seed(826)
@@ -449,7 +658,7 @@ def main(args):
     for i in range(10):
         random_sequence = ''.join([random.choice('AGTC') for _ in range(random_seq_len)])
         random_sequences_dict[i] = random_sequence
-    min_len = 7
+
     k = 5
     kmer = extract_kmers(sl_dict, k)
     mismatch_to_kmer = build_mismatch_index(sl_dict, k)
@@ -457,11 +666,13 @@ def main(args):
     random_mismatch_to_kmer = build_mismatch_index(random_sequences_dict, k)
 
     length_scores = {}
-    for SL, SEQ in sl_dict.items():
-        length_score = length_index(SL, SEQ, kmer, mismatch_to_kmer, k)
-        length_scores[SL] = length_score
 
-    bam_file = pysam.AlignmentFile(args.bam, 'rb')
+    SL_ref_length = get_sequences_by_length(sl_dict)
+    for SL, info in SL_ref_length.items():
+        length_score = length_index(SL, info['sequence'], kmer, mismatch_to_kmer, random_seq_len, k)
+        length_scores[len(info['sequence'])] = length_score
+
+    bam_file = pysam.AlignmentFile(args.input, 'rb')
     timestamp = int(time.time())
     tmp_output_name = f"tmp_{timestamp}.csv"
     outfile = open(tmp_output_name, "w")
@@ -477,37 +688,51 @@ def main(args):
         query_name = read.query_name     # 获取query的名称
         full_query_sequence = read.query_sequence  # 获取query的序列
         if read.is_reverse:
-            query_seq = str(Seq(full_query_sequence).reverse_complement())   # 序列映射到负链，需要反向互补处理
             strand = '-'
         else:
-            query_seq = full_query_sequence    # 序列映射到正链，直接使用
             strand = '+'
-        bam_list.append([query_name,query_seq,strand,read.cigartuples,read.query_alignment_length])
+        bam_list.append([query_name,full_query_sequence,strand,read.cigartuples,read.query_alignment_length])
     pbar = tqdm(total=len(bam_list), position=0, leave=True)
-    with multiprocessing.Pool(processes=args.cpu) as pool:
-        for item in bam_list:
-            pool.apply_async(calculation_per_process, args=(item,sl_dict,length_scores,random_sequences_dict,random_kmer,random_mismatch_to_kmer,k,kmer,mismatch_to_kmer), callback=update)
-        pool.close()
-        pool.join()
+
+    if mode == 'RNA':
+        with multiprocessing.Pool(processes=args.cpu) as pool:
+            for item in bam_list:
+                pool.apply_async(drs_calculation_per_process, args=(item, sl_dict, length_scores, random_sequences_dict,
+                                                                random_seq_len, random_kmer, random_mismatch_to_kmer,
+                                                                k, kmer, mismatch_to_kmer), callback=update)
+            pool.close()
+            pool.join()
+    elif mode == 'cDNA':
+        with multiprocessing.Pool(processes=args.cpu) as pool:
+            for item in bam_list:
+                pool.apply_async(cdna_calculation_per_process, args=(item, sl_dict, length_scores, random_sequences_dict,
+                                                                    random_seq_len, random_kmer,
+                                                                    random_mismatch_to_kmer,
+                                                                    k, kmer, mismatch_to_kmer), callback=update)
+            pool.close()
+            pool.join()
+
     pbar.close()
     outfile.close()
     df = pd.read_csv(tmp_output_name,sep='\t')
     df.sort_values(by=['query_name'], inplace=True)
     df.to_csv(args.output, index=False,sep='\t')
-    if args.visualization:
-        visualize_html(args.output, args.cutoff)
     print('Finished')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="help to know spliced leader and distinguish SL1 and SL2")
-    parser.add_argument("-r", "--ref", type=str, required=True, help="SL reference")
-    parser.add_argument("-b", "--bam", type=str, required=True, help="input the bam file")
-    parser.add_argument("-o", "--output", type=str, default="SLRanger.txt",
+    parser.add_argument("-r", "--refer", type=str,required=True,
+                        help="SL reference")
+    parser.add_argument("-i", "--input", type=str, metavar="",required=True,
+                        help="input the bam file")
+    parser.add_argument("-m", "--mode", type=str, metavar="", choices=['RNA','cDNA'],
+                        default="RNA", help="RNA or cDNA")
+    parser.add_argument("-o", "--output", type=str, metavar="",
+                        default="SLRanger_ppssw.txt",
                         help="output file")
-    parser.add_argument( "--visualization", action='store_true', help='Turn on the visualization mode')
     parser.add_argument("-t", "--cpu", type=int,
-                        default=4, help="CPU number")
-    parser.add_argument("-c", "--cutoff", type=float, default=4, help="cutoff of high confident SL sequence")
+                        default=1,
+                        help="number if CPU")
     args = parser.parse_args()
     main(args)

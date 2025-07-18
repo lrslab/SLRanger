@@ -68,10 +68,10 @@ help to know spliced leader and distinguish SL1 and SL2
 options:
   -h, --help            show this help message and exit
   -r REF, --ref REF     SL reference (fasta file recording SL sequence, required)
-  -b BAM, --bam BAM     input the bam file (required)
+  -i BAM, --input BAM     input the bam file (required)
+  -m , --mode           RNA or cDNA
   -o OUTPUT, --output OUTPUT
                         output file (default: SLRanger.txt)
-  --visualization       Turn on the visualization mode
   -t CPU, --cpu CPU     CPU number (default: 4)
   -c CUTOFF, --cutoff CUTOFF
                         The value used to filter high confident SL reads. 
@@ -108,7 +108,8 @@ We provided test data to run as below.
 git clone https://github.com/lrslab/SLRanger.git
 cd sample/
 unzip data.zip
-SL_detect.py --ref SL_list_cel.fa --bam test.bam -o SLRanger.txt -t 4 --visualization
+SL_detect.py --ref SL_list_cel.fa --input RNA_test.bam -o SLRanger.txt -t 4 
+SL_detect.py --ref SL_list_cel.fa --input cDNA_test.bam -o SLRanger_cDNA.txt -t 4
 ```
 ### 3. Operon prediction
 `operon_predict.py` is designed to predict operons.
@@ -141,5 +142,5 @@ A GFF file will be returned.
 We provided test data to run as below (should be run after `SL_detect.py`).
 ```
 cd sample/
-operon_predict.py -g cel_wormbase.gff -b test.bam -i SLRanger.txt  -o test.gff
+operon_predict.py -g cel_wormbase.gff -b RNA_test.bam -i SLRanger.txt  -o test.gff
 ```
