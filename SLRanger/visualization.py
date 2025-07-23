@@ -33,8 +33,9 @@ def sw_ratio(df, cols):
 def plot_cumulative_line(data, output_name, cf):
     df_wide_sw = sw_ratio(data, ['random_seq', 'SL_reference'])
     df_wide_sw.reset_index(inplace=True)
-    # sw_sum = df_wide_sw['SL_reference'][df_wide_sw['ratio'] > 5].sum()
-    sw_min = df_wide_sw['score'][df_wide_sw['ratio'] > cf].min()
+    df_wide_sw_s = df_wide_sw[df_wide_sw['score'] > 3]
+    # sw_sum = df_wide_sw['sw'][df_wide_sw['ratio'] > 5].sum()
+    sw_min = df_wide_sw_s['score'][df_wide_sw_s['ratio'] > cf].min()
 
     # Set ratios > 50 to infinity
     # df_wide_sw.loc[df_wide_sw['ratio'] > 50, 'ratio'] = np.inf

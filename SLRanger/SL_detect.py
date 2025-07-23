@@ -10,6 +10,7 @@ import random
 import multiprocessing
 from tqdm import tqdm
 import time
+from SLRanger.visualization import visualize_html
 
 def fasta_to_dict(fasta_path):
     fasta_dict = {}
@@ -717,6 +718,9 @@ def main(args):
     df = pd.read_csv(tmp_output_name,sep='\t')
     df.sort_values(by=['query_name'], inplace=True)
     df.to_csv(args.output, index=False,sep='\t')
+    if args.visualization:
+        visualize_html(args.output, args.cutoff)
+    print('Finished')
     print('Finished')
 
 if __name__ == '__main__':
@@ -731,6 +735,8 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--output", type=str, metavar="",
                         default="SLRanger_ppssw.txt",
                         help="output file")
+    parser.add_argument("-c", "--cutoff", type=float, default=4, help="cutoff of high confident SL sequence")
+    parser.add_argument("--visualization", action='store_true', help='Turn on the visualization mode')
     parser.add_argument("-t", "--cpu", type=int,
                         default=1,
                         help="number if CPU")

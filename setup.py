@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="SLRanger",
-    version="0.0.1.6",
+    version="0.0.1.7",
     author="GUO Zhihao",
     author_email="qhuozhihao@icloud.com",
     description='An integrated approach for spliced leader detection and operon prediction in eukaryotes using long RNA reads',
