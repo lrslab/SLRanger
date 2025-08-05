@@ -394,7 +394,7 @@ def visualize_html(output_file, cf):
         output_table.loc[output_table[col] >= 100, col] = '/'
 
     image_paths = [
-        "cumulative_int.png",
+        "cumulative_int_sw.png",
         "cumulative_int_sl.png",
         "query_length.png",
         "aligned_length.png",

@@ -27,7 +27,7 @@ This document contains the visualization results from the SLRanger.
 
 ### Cumulative Counts (SW). The **dashed black line** represents the recommended **cutoff** value.
 
-![Cumulative Counts (SW). The **dashed black line** represents the recommended **cutoff** value.](cumulative_int.png)
+![Cumulative Counts (SW). The **dashed black line** represents the recommended **cutoff** value.](cumulative_int_sw.png)
 
 ---
         
