@@ -142,3 +142,5 @@ We provided test data to run as below (should be run after `SL_detect.py`).
 cd sample/
 operon_predict.py -g cel_wormbase.gff -b RNA_test.bam -i SLRanger.txt  -o test.gff
 ```
+## Cite our work
+Our paper is [online](https://doi.org/10.1093/bib/bbaf437) now. Please cite our work -- **SLRanger: an integrated approach for spliced leader detection and operon prediction using long RNA reads** on _Briefings in Bioinformatics_.
