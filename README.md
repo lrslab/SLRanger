@@ -110,37 +110,69 @@ SL_detect.py --ref SL_list_cel.fa --input RNA_test.bam -o SLRanger.txt -t 4
 SL_detect.py --ref SL_list_cel.fa --input cDNA_test.bam -o SLRanger_cDNA.txt -t 4
 ```
 ### 3. Operon prediction
-`operon_predict.py` is designed to predict operons.
+`operon_predict.py` predicts operons and always writes a per-gene SL1/SL2
+count table. Genes without high-confidence SL reads are omitted from that
+table. A read mapped to multiple semicolon-delimited genes contributes once to
+each gene.
+
+Operon prediction can use either the original BAM input (`-b/--bam`) or an
+existing two-column read-to-gene mapping file (`-m/--mapping`). If only SL1
+reads are detected, the count table is still written and operon prediction is
+skipped. SL2-only input is allowed to continue through operon prediction.
+
 #### Command options
 Available options can be viewed by running `operon_predict.py -h` in the command line.
 ```
 operon_predict.py  -h
-usage: operon_predict.py [-h] -g GFF -b BAM -i INPUT [-o OUTPUT] [-d DISTANCE]
+usage: operon_predict.py [-h] -g GFF (-b BAM | -m MAPPING) -i INPUT
+                         [-o OUTPUT] [--gene-sl-table GENE_SL_TABLE]
+                         [--sl1-map SL1_MAP] [--sl2-map SL2_MAP]
+                         [-d DISTANCE] [-c CUTOFF]
 help to know spliced leader and distinguish SL1 and SL2
 
 options:
   -h, --help            show this help message and exit
-  -g GFF, --gff GFF     GFF annotation file (required)
-  -b BAM, --bam BAM     bam file (required)
+  -g GFF, --gff GFF, -r GFF, --refer GFF
+                        GFF annotation file
+  -b BAM, --bam BAM     BAM file
+  -m MAPPING, --mapping MAPPING
+                        existing read-to-gene mapping file
   -i INPUT, --input INPUT
-                        input the SL detection file (result file from SL_detect.py, required)
+                        input the SL detection file
   -o OUTPUT, --output OUTPUT
-                        output operon detection file ( default: SLRanger.gff)
+                        output operon detection file (default: SLRanger.gff)
+  --gene-sl-table GENE_SL_TABLE
+                        per-gene SL1/SL2 count table
+  --sl1-map SL1_MAP     comma-separated SL_type values treated as SL1
+  --sl2-map SL2_MAP     comma-separated SL_type values treated as SL2
   -d DISTANCE, --distance DISTANCE
                         promoter scope (default: 5000)
   -c CUTOFF, --cutoff CUTOFF
-                        The value used to filter high confident SL reads. 
-                        The higher the value, the stricter it is. 
-                        The range is between 0-10. (default: 4)                      
+                        cutoff of high-confidence SL reads (default: 4)
 ```
 #### Output description
-A GFF file will be returned.
+When operon prediction runs, a GFF file is returned. The per-gene count table
+is always written. By default it is placed next to the GFF and named
+`<output_stem>_gene_sl1_sl2.tsv`. It contains `SL1`, `SL2`, `sum_count`,
+`sl2_ratio`, and the gene classification columns used for prediction.
+
+Without `--sl1-map` or `--sl2-map`, the legacy SLRanger classification is
+preserved: exact `SL1` is treated as SL1, `random`, `SL_unknown`, and
+`SL1_unknown` are excluded, and the remaining recognized types are treated as
+SL2. Supply both map options to classify custom reference names explicitly.
 
 ####  Example
 We provided test data to run as below (should be run after `SL_detect.py`).
 ```
 cd sample/
 operon_predict.py -g cel_wormbase.gff -b RNA_test.bam -i SLRanger.txt  -o test.gff
+```
+
+To reuse an existing read-to-gene mapping and custom SL names:
+
+```
+operon_predict.py -g annotation.gff -m reads_to_genes.tsv -i SLRanger.txt \
+  -o operons.gff --sl1-map SL1 --sl2-map SL2,SL3,SL4
 ```
 ## Cite our work
 Our paper is [online](https://doi.org/10.1093/bib/bbaf437) now. Please cite our work -- **SLRanger: an integrated approach for spliced leader detection and operon prediction using long RNA reads** on _Briefings in Bioinformatics_.
