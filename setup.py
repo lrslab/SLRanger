@@ -5,20 +5,23 @@ with open("README.md", "r") as fh:
 
 setup(
     name="SLRanger",
-    version="0.0.1.8",
+    version="0.0.1.9",
     author="GUO Zhihao",
     author_email="qhuozhihao@icloud.com",
     description='An integrated approach for spliced leader detection and operon prediction in eukaryotes using long RNA reads',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/lrslab/SLRanger",
-    packages=find_packages(),
+    packages=find_packages(exclude=("tests", "tests.*")),
     classifiers=[
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.7.0,<=3.11.7',
+    python_requires='>=3.9,<3.12',
     install_requires=[
         'bio>=1.5.0',
         'numpy>=1.23.0,<2.0.0',
